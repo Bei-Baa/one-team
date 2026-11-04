@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { reminderService } from './services/reminderService';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { MobileNav } from './components/layout/MobileNav';
@@ -36,6 +37,11 @@ import { Avatar } from './components/common/Avatar';
 const MainLayout: React.FC = () => {
   const { activePage, setActivePage, settings } = useApp();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    reminderService.startScheduler();
+    return () => reminderService.stopScheduler();
+  }, []);
 
   const navItems: { id: PageId; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Главная', icon: LayoutDashboard },

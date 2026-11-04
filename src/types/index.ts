@@ -271,13 +271,26 @@ export interface AnalyticsSummary {
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
+export type NotificationCategory =
+  | 'task'
+  | 'project'
+  | 'team'
+  | 'finance'
+  | 'client'
+  | 'strategy'
+  | 'system';
+
 export interface NotificationItem {
   id: string;
   title: string;
   description: string;
   timestamp: string;
   read: boolean;
-  type: 'task' | 'project' | 'team' | 'finance' | 'client' | 'strategy' | 'system';
+  type: NotificationCategory;
+  entityId?: string;
+  targetPage?: PageId;
+  recipientId?: string;
+  fingerprint?: string;
 }
 
 export interface WorkspaceSettings {
@@ -287,13 +300,21 @@ export interface WorkspaceSettings {
   theme: ThemeMode;
   defaultCurrency: Currency;
   notifications: {
-    taskAssigned: boolean;
-    taskCompleted: boolean;
-    projectMilestone: boolean;
-    teamActivity: boolean;
-    financialUpdates: boolean;
-    clientActivity: boolean;
-    dailyDigest: boolean;
+    taskNotifications: boolean;
+    projectNotifications: boolean;
+    teamNotifications: boolean;
+    clientNotifications: boolean;
+    financeNotifications: boolean;
+    strategyNotifications: boolean;
+    deadlineReminders: boolean;
+    browserNotifications: boolean;
+    taskAssigned?: boolean;
+    taskCompleted?: boolean;
+    projectMilestone?: boolean;
+    teamActivity?: boolean;
+    financialUpdates?: boolean;
+    clientActivity?: boolean;
+    dailyDigest?: boolean;
   };
   currentUser: {
     id: string;

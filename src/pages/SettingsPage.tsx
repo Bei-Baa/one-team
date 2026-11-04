@@ -13,11 +13,16 @@ import {
   Save,
   Shield,
   RotateCcw,
+  Download,
+  Upload,
+  AlertTriangle,
+  FileCheck,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { ThemeMode, TeamRole } from '../types';
 import { Avatar } from '../components/common/Avatar';
 import { storageService } from '../services/storage';
+import { dataCleanupService } from '../services/dataCleanup';
 
 type SettingsTab = 'general' | 'appearance' | 'team' | 'notifications' | 'sync' | 'profile';
 
@@ -44,6 +49,7 @@ export const SettingsPage: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing'>('synced');
   const [lastSyncTime, setLastSyncTime] = useState('Только что');
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
 
   const triggerSaveNotice = () => {
     setSaveSuccess(true);
@@ -88,6 +94,80 @@ export const SettingsPage: React.FC = () => {
       setLastSyncTime(`Сегодня в ${timeStr}`);
       triggerSaveNotice();
     }, 900);
+  };
+
+  const handleExportBackup = () => {
+    try {
+      dataCleanupService.downloadBackupFile();
+      setBackupMessage('Резервная копия успешно экспортирована и скачана.');
+      setTimeout(() => setBackupMessage(null), 4000);
+    } catch (e: any) {
+      alert(`Ошибка при экспорте резервной копии: ${e.message}`);
+    }
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const json = JSON.parse(text);
+        const validation = dataCleanupService.validateBackup(json);
+        if (!validation.valid) {
+          alert(`Ошибка в файле резервной копии: ${validation.error}`);
+          return;
+        }
+
+        const counts = validation.recordCounts;
+        const msg = `Подтвердите восстановление из копии v${validation.version}:\n\n` +
+          `• Задач: ${counts?.tasks ?? 0}\n` +
+          `• Проектов: ${counts?.projects ?? 0}\n` +
+          `• Клиентов: ${counts?.clients ?? 0}\n` +
+          `• Финансовых операций: ${counts?.transactions ?? 0}\n\n` +
+          `Текущие данные будут предварительно сохранены в аварийную копию. Продолжить?`;
+
+        if (window.confirm(msg)) {
+          const success = dataCleanupService.restoreBackup(json);
+          if (success) {
+            refreshData();
+            setBackupMessage('Данные успешно восстановлены из резервной копии.');
+            setTimeout(() => setBackupMessage(null), 4000);
+          } else {
+            alert('Не удалось восстановить резервную копию.');
+          }
+        }
+      } catch (err: any) {
+        alert(`Ошибка при чтении файла резервной копии: ${err.message}`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleSafeCleanup = () => {
+    const confirmText =
+      'ВНИМАНИЕ: Будут безопасно удалены демонстрационные данные (задачи, проекты, клиенты, платежи, стратегические цели).\n\n' +
+      '• Ваша учётная запись и сотрудники сохраняются.\n' +
+      '• Настройки рабочего пространства сохраняются.\n' +
+      '• Перед очисткой создаётся полная резервная копия.\n\n' +
+      'Продолжить подготовку к первому реальному запуску?';
+
+    if (window.confirm(confirmText)) {
+      const report = dataCleanupService.executeSafeCleanup();
+      refreshData();
+      setBackupMessage(
+        `Безопасная очистка завершена. Удалено объектов: ${
+          report.removedRecords.tasks +
+          report.removedRecords.projects +
+          report.removedRecords.clients +
+          report.removedRecords.transactions
+        }. Сохранены аккаунты (${report.preservedRecords.members}) и настройки.`
+      );
+      setTimeout(() => setBackupMessage(null), 6000);
+    }
   };
 
   const handleResetData = () => {
@@ -386,84 +466,183 @@ export const SettingsPage: React.FC = () => {
                   Настройки оповещений
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Управляйте событиями, о которых вы хотите получать уведомления в приложении
+                  Управляйте категориями уведомлений, напоминаниями о дедлайнах и разрешениями браузера
                 </p>
               </div>
 
-              <div className="space-y-4 max-w-xl">
+              <div className="space-y-3.5 max-w-xl">
+                {/* Task notifications */}
                 <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer">
                   <div>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white block">
-                      Назначение новой задачи
+                      Уведомления по задачам
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Уведомлять меня, когда мне назначают задачу
+                      Назначение, изменение дедлайна, завершение и комментарии
                     </span>
                   </div>
                   <input
                     type="checkbox"
-                    checked={notifications.taskAssigned}
+                    checked={notifications.taskNotifications}
                     onChange={(e) =>
-                      setNotifications({ ...notifications, taskAssigned: e.target.checked })
+                      setNotifications({ ...notifications, taskNotifications: e.target.checked })
                     }
                     className="w-5 h-5 accent-blue-600 cursor-pointer"
                   />
                 </label>
 
+                {/* Project notifications */}
                 <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer">
                   <div>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white block">
-                      Выполнение задачи
+                      Уведомления по проектам
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Уведомлять при завершении задач в моих проектах
+                      Смена статуса проектов, назначение участников и дедлайны
                     </span>
                   </div>
                   <input
                     type="checkbox"
-                    checked={notifications.taskCompleted}
+                    checked={notifications.projectNotifications}
                     onChange={(e) =>
-                      setNotifications({ ...notifications, taskCompleted: e.target.checked })
+                      setNotifications({ ...notifications, projectNotifications: e.target.checked })
                     }
                     className="w-5 h-5 accent-blue-600 cursor-pointer"
                   />
                 </label>
 
+                {/* Team notifications */}
                 <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer">
                   <div>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white block">
-                      Контрольные точки проектов (Milestones)
+                      События команды
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Оповещения о смене статуса или приближении дедлайна проекта
+                      Новые участники, изменение ролей и приглашения
                     </span>
                   </div>
                   <input
                     type="checkbox"
-                    checked={notifications.projectMilestone}
+                    checked={notifications.teamNotifications}
                     onChange={(e) =>
-                      setNotifications({ ...notifications, projectMilestone: e.target.checked })
+                      setNotifications({ ...notifications, teamNotifications: e.target.checked })
                     }
                     className="w-5 h-5 accent-blue-600 cursor-pointer"
                   />
                 </label>
 
+                {/* Client notifications */}
                 <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer">
                   <div>
                     <span className="text-sm font-semibold text-slate-900 dark:text-white block">
-                      Ежедневный дайджест
+                      Клиенты и CRM сделки
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      Утренний обзор приоритетов и дедлайнов команды
+                      Новые клиенты, смена статусов и добавление контактов
                     </span>
                   </div>
                   <input
                     type="checkbox"
-                    checked={notifications.dailyDigest}
+                    checked={notifications.clientNotifications}
                     onChange={(e) =>
-                      setNotifications({ ...notifications, dailyDigest: e.target.checked })
+                      setNotifications({ ...notifications, clientNotifications: e.target.checked })
                     }
                     className="w-5 h-5 accent-blue-600 cursor-pointer"
+                  />
+                </label>
+
+                {/* Finance notifications */}
+                <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer">
+                  <div>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white block">
+                      Финансовые операции
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Крупные доходы, расходы и поступления от клиентов
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notifications.financeNotifications}
+                    onChange={(e) =>
+                      setNotifications({ ...notifications, financeNotifications: e.target.checked })
+                    }
+                    className="w-5 h-5 accent-blue-600 cursor-pointer"
+                  />
+                </label>
+
+                {/* Strategy notifications */}
+                <label className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer">
+                  <div>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white block">
+                      Стратегия и дорожная карта
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Достижение стратегических целей и вехи дорожной карты
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notifications.strategyNotifications}
+                    onChange={(e) =>
+                      setNotifications({ ...notifications, strategyNotifications: e.target.checked })
+                    }
+                    className="w-5 h-5 accent-blue-600 cursor-pointer"
+                  />
+                </label>
+
+                {/* Deadline reminders */}
+                <label className="flex items-center justify-between p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/30 cursor-pointer">
+                  <div>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white block">
+                      ⏰ Напоминания о дедлайнах
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      За 24 часа до срока, в день дедлайна и при просрочке
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notifications.deadlineReminders}
+                    onChange={(e) =>
+                      setNotifications({ ...notifications, deadlineReminders: e.target.checked })
+                    }
+                    className="w-5 h-5 accent-blue-600 cursor-pointer"
+                  />
+                </label>
+
+                {/* Browser notifications */}
+                <label className="flex items-center justify-between p-3.5 rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/40 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/30 cursor-pointer">
+                  <div>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-white block">
+                      🔔 Системные уведомления браузера (Desktop)
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Показывать нативные всплывающие окна при открытом приложении
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notifications.browserNotifications}
+                    onChange={async (e) => {
+                      const willEnable = e.target.checked;
+                      if (willEnable && typeof window !== 'undefined' && 'Notification' in window) {
+                        if (Notification.permission === 'default') {
+                          const res = await Notification.requestPermission();
+                          if (res !== 'granted') {
+                            alert('Разрешение на системные уведомления отклонено в браузере. Вы продолжите получать уведомления внутри приложения.');
+                            setNotifications({ ...notifications, browserNotifications: false });
+                            return;
+                          }
+                        } else if (Notification.permission === 'denied') {
+                          alert('Системные уведомления заблокированы в настройках браузера. Разрешите их в параметрах сайта.');
+                          setNotifications({ ...notifications, browserNotifications: false });
+                          return;
+                        }
+                      }
+                      setNotifications({ ...notifications, browserNotifications: willEnable });
+                    }}
+                    className="w-5 h-5 accent-purple-600 cursor-pointer"
                   />
                 </label>
 
@@ -531,22 +710,78 @@ export const SettingsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Reset to initial demo */}
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2">
-                  Сброс демонстрационных данных
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                  Сбросить состояние всех задач, проектов и карточек к первоначальному демо-набору.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleResetData}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 hover:border-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Сбросить демо-данные</span>
-                </button>
+              {/* Backup, Export & Import Section */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4 max-w-xl">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Резервное копирование и экспорт
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Скачивайте резервную копию или загружайте ранее сохранённый файл формата JSON
+                  </p>
+                </div>
+
+                {backupMessage && (
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300 font-medium flex items-center gap-2">
+                    <FileCheck className="w-4 h-4 shrink-0" />
+                    <span>{backupMessage}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleExportBackup}
+                    className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-blue-600" />
+                    <span>Скачать резервную копию</span>
+                  </button>
+
+                  <label className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer">
+                    <Upload className="w-4 h-4 text-purple-600" />
+                    <span>Восстановить из файла</span>
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      onChange={handleImportBackup}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Safe Clean Data for Production Release */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3 max-w-xl">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    Подготовка к боевому запуску (Безопасная очистка)
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Удаляет демонстрационные карточки, проекты, сделки и транзакции, создавая автоматический бэкап. Учётная запись, настройки и сотрудники строго сохраняются.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSafeCleanup}
+                    className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-xl border border-amber-200 dark:border-amber-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Очистить демо-данные (Безопасно)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetData}
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Сбросить к исходному демо</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

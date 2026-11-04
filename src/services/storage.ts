@@ -31,8 +31,9 @@ import {
   INITIAL_STRATEGIC_PRIORITIES,
   INITIAL_DEVELOPMENT_PLAN,
 } from './mockData';
+import { indexedDbEngine, STORES } from './indexedDb';
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   TASKS: 'oneteam_tasks_v1',
   PROJECTS: 'oneteam_projects_v1',
   MEMBERS: 'oneteam_members_v1',
@@ -48,22 +49,81 @@ const STORAGE_KEYS = {
 };
 
 class StorageService {
+  constructor() {
+    this.initIndexedDbSync();
+  }
+
+  public isDemoCleaned(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+    return localStorage.getItem('oneteam_demo_cleaned_v1') === 'true';
+  }
+
+  /**
+   * Initializes IndexedDB and hydrates data from IndexedDB into memory/localStorage,
+   * or migrates existing localStorage data into IndexedDB.
+   */
+  async initIndexedDbSync(): Promise<void> {
+    if (typeof window === 'undefined' || typeof indexedDB === 'undefined') return;
+    try {
+      await indexedDbEngine.getDb();
+      // Check if IndexedDB has tasks, otherwise seed with current tasks
+      const idbTasks = await indexedDbEngine.getAll<Task>(STORES.TASKS);
+      if (idbTasks.length === 0 && !this.isDemoCleaned()) {
+        const curTasks = this.getTasks();
+        if (curTasks.length > 0) {
+          await indexedDbEngine.setAll(STORES.TASKS, curTasks);
+          await indexedDbEngine.setAll(STORES.PROJECTS, this.getProjects());
+          await indexedDbEngine.setAll(STORES.MEMBERS, this.getMembers());
+          await indexedDbEngine.setAll(STORES.CLIENTS, this.getClients());
+          await indexedDbEngine.setAll(STORES.TRANSACTIONS, this.getTransactions());
+          await indexedDbEngine.setAll(STORES.GOALS, this.getStrategicGoals());
+          await indexedDbEngine.setAll(STORES.PRIORITIES, this.getStrategicPriorities());
+          await indexedDbEngine.setAll(STORES.PLAN, this.getDevelopmentPlan());
+          await indexedDbEngine.setAll(STORES.NOTIFICATIONS, this.getNotifications());
+          await indexedDbEngine.put(STORES.SETTINGS, { id: 'current', ...this.getSettings() });
+          const mission = this.getStrategyMission();
+          await indexedDbEngine.put(STORES.MISSION, { ...mission, id: mission.id || 'mission-1' });
+          const vision = this.getStrategyVision();
+          await indexedDbEngine.put(STORES.VISION, { ...vision, id: vision.id || 'vision-1' });
+        }
+      }
+    } catch (e) {
+      console.warn('IndexedDB sync initialization notice:', e);
+    }
+  }
+
   private safeGet<T>(key: string, defaultValue: T): T {
     try {
+      if (typeof localStorage === 'undefined') return defaultValue;
       const item = localStorage.getItem(key);
       if (!item) return defaultValue;
       return JSON.parse(item) as T;
     } catch (e) {
-      console.warn(`Failed to read ${key} from localStorage:`, e);
+      console.warn(`Failed to read ${key} from storage:`, e);
       return defaultValue;
     }
   }
 
-  private safeSet<T>(key: string, value: T): void {
+  private safeSet<T>(key: string, value: T, storeName?: (typeof STORES)[keyof typeof STORES]): void {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
     } catch (e) {
-      console.warn(`Failed to write ${key} to localStorage:`, e);
+      console.warn(`Failed to write ${key} to storage:`, e);
+    }
+
+    // Asynchronously persist to IndexedDB
+    if (storeName && typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      if (Array.isArray(value)) {
+        indexedDbEngine.setAll(storeName, value).catch((e) => {
+          console.warn(`IndexedDB setAll failed for ${storeName}:`, e);
+        });
+      } else {
+        indexedDbEngine.put(storeName, { id: 'current', ...(value as any) }).catch((e) => {
+          console.warn(`IndexedDB put failed for ${storeName}:`, e);
+        });
+      }
     }
   }
 
@@ -85,7 +145,7 @@ class StorageService {
           updatedAt: now,
         };
         tasks[index] = updated;
-        this.safeSet(STORAGE_KEYS.TASKS, tasks);
+        this.safeSet(STORAGE_KEYS.TASKS, tasks, STORES.TASKS);
         return updated;
       }
     }
@@ -108,13 +168,13 @@ class StorageService {
     };
 
     tasks.unshift(newTask);
-    this.safeSet(STORAGE_KEYS.TASKS, tasks);
+    this.safeSet(STORAGE_KEYS.TASKS, tasks, STORES.TASKS);
     return newTask;
   }
 
   deleteTask(taskId: string): void {
     const tasks = this.getTasks().filter((t) => t.id !== taskId);
-    this.safeSet(STORAGE_KEYS.TASKS, tasks);
+    this.safeSet(STORAGE_KEYS.TASKS, tasks, STORES.TASKS);
   }
 
   updateTaskStatus(taskId: string, status: TaskStatus): Task | null {
@@ -148,7 +208,7 @@ class StorageService {
     };
 
     tasks[index] = updated;
-    this.safeSet(STORAGE_KEYS.TASKS, tasks);
+    this.safeSet(STORAGE_KEYS.TASKS, tasks, STORES.TASKS);
     return updated;
   }
 
@@ -200,7 +260,7 @@ class StorageService {
 
     tasks[index].comments.push(comment);
     tasks[index].updatedAt = now;
-    this.safeSet(STORAGE_KEYS.TASKS, tasks);
+    this.safeSet(STORAGE_KEYS.TASKS, tasks, STORES.TASKS);
     return comment;
   }
 
@@ -221,7 +281,7 @@ class StorageService {
           ...project,
         };
         projects[index] = updated;
-        this.safeSet(STORAGE_KEYS.PROJECTS, projects);
+        this.safeSet(STORAGE_KEYS.PROJECTS, projects, STORES.PROJECTS);
         return updated;
       }
     }
@@ -233,13 +293,13 @@ class StorageService {
     };
 
     projects.unshift(newProject);
-    this.safeSet(STORAGE_KEYS.PROJECTS, projects);
+    this.safeSet(STORAGE_KEYS.PROJECTS, projects, STORES.PROJECTS);
     return newProject;
   }
 
   deleteProject(projectId: string): void {
     const projects = this.getProjects().filter((p) => p.id !== projectId);
-    this.safeSet(STORAGE_KEYS.PROJECTS, projects);
+    this.safeSet(STORAGE_KEYS.PROJECTS, projects, STORES.PROJECTS);
   }
 
   toggleArchiveProject(projectId: string): Project | null {
@@ -248,7 +308,7 @@ class StorageService {
     if (index === -1) return null;
 
     projects[index].isArchived = !projects[index].isArchived;
-    this.safeSet(STORAGE_KEYS.PROJECTS, projects);
+    this.safeSet(STORAGE_KEYS.PROJECTS, projects, STORES.PROJECTS);
     return projects[index];
   }
 
@@ -268,7 +328,7 @@ class StorageService {
           ...member,
         };
         members[index] = updated;
-        this.safeSet(STORAGE_KEYS.MEMBERS, members);
+        this.safeSet(STORAGE_KEYS.MEMBERS, members, STORES.MEMBERS);
         return updated;
       }
     }
@@ -279,13 +339,13 @@ class StorageService {
     };
 
     members.push(newMember);
-    this.safeSet(STORAGE_KEYS.MEMBERS, members);
+    this.safeSet(STORAGE_KEYS.MEMBERS, members, STORES.MEMBERS);
     return newMember;
   }
 
   deleteMember(memberId: string): void {
     const members = this.getMembers().filter((m) => m.id !== memberId);
-    this.safeSet(STORAGE_KEYS.MEMBERS, members);
+    this.safeSet(STORAGE_KEYS.MEMBERS, members, STORES.MEMBERS);
   }
 
   // Clients
@@ -305,7 +365,7 @@ class StorageService {
           ...client,
         };
         clients[index] = updated;
-        this.safeSet(STORAGE_KEYS.CLIENTS, clients);
+        this.safeSet(STORAGE_KEYS.CLIENTS, clients, STORES.CLIENTS);
         return updated;
       }
     }
@@ -319,13 +379,13 @@ class StorageService {
     };
 
     clients.unshift(newClient);
-    this.safeSet(STORAGE_KEYS.CLIENTS, clients);
+    this.safeSet(STORAGE_KEYS.CLIENTS, clients, STORES.CLIENTS);
     return newClient;
   }
 
   deleteClient(clientId: string): void {
     const clients = this.getClients().filter((c) => c.id !== clientId);
-    this.safeSet(STORAGE_KEYS.CLIENTS, clients);
+    this.safeSet(STORAGE_KEYS.CLIENTS, clients, STORES.CLIENTS);
   }
 
   toggleArchiveClient(clientId: string): Client | null {
@@ -335,7 +395,7 @@ class StorageService {
 
     const currentStatus = clients[index].status;
     clients[index].status = currentStatus === 'archived' ? 'active' : 'archived';
-    this.safeSet(STORAGE_KEYS.CLIENTS, clients);
+    this.safeSet(STORAGE_KEYS.CLIENTS, clients, STORES.CLIENTS);
     return clients[index];
   }
 
@@ -353,7 +413,7 @@ class StorageService {
     };
 
     clients[index].notes.unshift(note);
-    this.safeSet(STORAGE_KEYS.CLIENTS, clients);
+    this.safeSet(STORAGE_KEYS.CLIENTS, clients, STORES.CLIENTS);
     return note;
   }
 
@@ -369,7 +429,7 @@ class StorageService {
 
     clients[index].interactions.unshift(newInteraction);
     clients[index].lastInteraction = interaction.date;
-    this.safeSet(STORAGE_KEYS.CLIENTS, clients);
+    this.safeSet(STORAGE_KEYS.CLIENTS, clients, STORES.CLIENTS);
     return newInteraction;
   }
 
@@ -390,7 +450,7 @@ class StorageService {
           ...tx,
         };
         transactions[index] = updated;
-        this.safeSet(STORAGE_KEYS.TRANSACTIONS, transactions);
+        this.safeSet(STORAGE_KEYS.TRANSACTIONS, transactions, STORES.TRANSACTIONS);
         return updated;
       }
     }
@@ -402,13 +462,13 @@ class StorageService {
     };
 
     transactions.unshift(newTx);
-    this.safeSet(STORAGE_KEYS.TRANSACTIONS, transactions);
+    this.safeSet(STORAGE_KEYS.TRANSACTIONS, transactions, STORES.TRANSACTIONS);
     return newTx;
   }
 
   deleteTransaction(txId: string): void {
     const transactions = this.getTransactions().filter((t) => t.id !== txId);
-    this.safeSet(STORAGE_KEYS.TRANSACTIONS, transactions);
+    this.safeSet(STORAGE_KEYS.TRANSACTIONS, transactions, STORES.TRANSACTIONS);
   }
 
   // STRATEGY MODULE METHODS
@@ -417,7 +477,7 @@ class StorageService {
   }
 
   saveStrategyMission(mission: TeamMission): TeamMission {
-    this.safeSet(STORAGE_KEYS.MISSION, mission);
+    this.safeSet(STORAGE_KEYS.MISSION, mission, STORES.MISSION);
     return mission;
   }
 
@@ -426,7 +486,7 @@ class StorageService {
   }
 
   saveStrategyVision(vision: TeamVision): TeamVision {
-    this.safeSet(STORAGE_KEYS.VISION, vision);
+    this.safeSet(STORAGE_KEYS.VISION, vision, STORES.VISION);
     return vision;
   }
 
@@ -447,7 +507,7 @@ class StorageService {
           updatedAt: now,
         };
         goals[index] = updated;
-        this.safeSet(STORAGE_KEYS.GOALS, goals);
+        this.safeSet(STORAGE_KEYS.GOALS, goals, STORES.GOALS);
         return updated;
       }
     }
@@ -460,13 +520,13 @@ class StorageService {
     };
 
     goals.unshift(newGoal);
-    this.safeSet(STORAGE_KEYS.GOALS, goals);
+    this.safeSet(STORAGE_KEYS.GOALS, goals, STORES.GOALS);
     return newGoal;
   }
 
   deleteStrategicGoal(goalId: string): void {
     const goals = this.getStrategicGoals().filter((g) => g.id !== goalId);
-    this.safeSet(STORAGE_KEYS.GOALS, goals);
+    this.safeSet(STORAGE_KEYS.GOALS, goals, STORES.GOALS);
   }
 
   getStrategicPriorities(): StrategicPriority[] {
@@ -484,7 +544,7 @@ class StorageService {
           ...priority,
         };
         priorities[index] = updated;
-        this.safeSet(STORAGE_KEYS.PRIORITIES, priorities);
+        this.safeSet(STORAGE_KEYS.PRIORITIES, priorities, STORES.PRIORITIES);
         return updated;
       }
     }
@@ -496,13 +556,13 @@ class StorageService {
     };
 
     priorities.push(newPriority);
-    this.safeSet(STORAGE_KEYS.PRIORITIES, priorities);
+    this.safeSet(STORAGE_KEYS.PRIORITIES, priorities, STORES.PRIORITIES);
     return newPriority;
   }
 
   deleteStrategicPriority(priorityId: string): void {
     const priorities = this.getStrategicPriorities().filter((p) => p.id !== priorityId);
-    this.safeSet(STORAGE_KEYS.PRIORITIES, priorities);
+    this.safeSet(STORAGE_KEYS.PRIORITIES, priorities, STORES.PRIORITIES);
   }
 
   getDevelopmentPlan(): DevelopmentPlanItem[] {
@@ -520,7 +580,7 @@ class StorageService {
           ...item,
         };
         plan[index] = updated;
-        this.safeSet(STORAGE_KEYS.PLAN, plan);
+        this.safeSet(STORAGE_KEYS.PLAN, plan, STORES.PLAN);
         return updated;
       }
     }
@@ -532,13 +592,13 @@ class StorageService {
     };
 
     plan.push(newItem);
-    this.safeSet(STORAGE_KEYS.PLAN, plan);
+    this.safeSet(STORAGE_KEYS.PLAN, plan, STORES.PLAN);
     return newItem;
   }
 
   deleteDevelopmentPlanItem(itemId: string): void {
     const plan = this.getDevelopmentPlan().filter((p) => p.id !== itemId);
-    this.safeSet(STORAGE_KEYS.PLAN, plan);
+    this.safeSet(STORAGE_KEYS.PLAN, plan, STORES.PLAN);
   }
 
   // Settings
@@ -552,25 +612,56 @@ class StorageService {
       ...current,
       ...settings,
     };
-    this.safeSet(STORAGE_KEYS.SETTINGS, updated);
+    this.safeSet(STORAGE_KEYS.SETTINGS, updated, STORES.SETTINGS);
     return updated;
   }
 
   // Notifications
   getNotifications(): NotificationItem[] {
-    return this.safeGet<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
+    return this.safeGet<NotificationItem[]>(
+      STORAGE_KEYS.NOTIFICATIONS,
+      this.isDemoCleaned() ? [] : INITIAL_NOTIFICATIONS
+    );
+  }
+
+  saveNotification(notification: Omit<NotificationItem, 'id' | 'timestamp'> & { id?: string }): NotificationItem {
+    const notifications = this.getNotifications();
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+    if (notification.fingerprint) {
+      const existing = notifications.find((n) => n.fingerprint === notification.fingerprint);
+      if (existing) {
+        return existing;
+      }
+    }
+
+    const newNotif: NotificationItem = {
+      ...notification,
+      id: notification.id || `notif-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: now,
+    };
+
+    notifications.unshift(newNotif);
+    const trimmed = notifications.slice(0, 100);
+    this.safeSet(STORAGE_KEYS.NOTIFICATIONS, trimmed, STORES.NOTIFICATIONS);
+    return newNotif;
+  }
+
+  deleteNotification(id: string): void {
+    const notifications = this.getNotifications().filter((n) => n.id !== id);
+    this.safeSet(STORAGE_KEYS.NOTIFICATIONS, notifications, STORES.NOTIFICATIONS);
   }
 
   markNotificationRead(id: string): void {
     const notifications = this.getNotifications().map((n) =>
       n.id === id ? { ...n, read: true } : n
     );
-    this.safeSet(STORAGE_KEYS.NOTIFICATIONS, notifications);
+    this.safeSet(STORAGE_KEYS.NOTIFICATIONS, notifications, STORES.NOTIFICATIONS);
   }
 
   markAllNotificationsRead(): void {
     const notifications = this.getNotifications().map((n) => ({ ...n, read: true }));
-    this.safeSet(STORAGE_KEYS.NOTIFICATIONS, notifications);
+    this.safeSet(STORAGE_KEYS.NOTIFICATIONS, notifications, STORES.NOTIFICATIONS);
   }
 
   // Reset to demo data
@@ -587,6 +678,11 @@ class StorageService {
     localStorage.removeItem(STORAGE_KEYS.GOALS);
     localStorage.removeItem(STORAGE_KEYS.PRIORITIES);
     localStorage.removeItem(STORAGE_KEYS.PLAN);
+    localStorage.removeItem('oneteam_demo_cleaned_v1');
+
+    if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+      indexedDbEngine.clearAll().catch((e) => console.warn('IndexedDB clearAll error:', e));
+    }
   }
 }
 
