@@ -54,7 +54,7 @@ class NotificationService {
         try {
           const browserNotif = new Notification(options.title, {
             body: options.description,
-            icon: '/vite.svg',
+            icon: '/icons/icon-192.png',
           });
 
           browserNotif.onclick = () => {

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Dark Navy Tech Background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#070B14" />
+    </linearGradient>
+
+    <!-- Vibrant Left Wing Gradient (Cyan to Electric Blue) -->
+    <linearGradient id="leftWing" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="60%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+
+    <!-- Vibrant Right Wing Gradient (Deep Blue to Royal Violet Blue) -->
+    <linearGradient id="rightWing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+
+    <!-- Sharp Diagonal Crossbar / Dynamic Core Beam Gradient -->
+    <linearGradient id="beamGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+
+    <!-- Subtle glow filter for the core apex -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Squircle: Standard rounded square with smooth curvature -->
+  <rect width="512" height="512" rx="116" fill="url(#bgGrad)" />
+
+  <!-- Inner border ring for crisp contrast on dark or light backgrounds -->
+  <rect width="508" height="508" x="2" y="2" rx="114" fill="none" stroke="#38BDF8" stroke-opacity="0.12" stroke-width="3" />
+
+  <!-- Stylized Abstract Letter 'A' -->
+  <g id="brandMark">
+    <!-- Left Wing of 'A' with sharp angled cuts -->
+    <path
+      d="M256 92
+         L212 92
+         C202 92 193 98 188 107
+         L96 384
+         C92 396 101 408 114 408
+         L172 408
+         C182 408 191 402 195 392
+         L234 290
+         L286 290
+         L256 92 Z"
+      fill="url(#leftWing)"
+    />
+
+    <!-- Right Wing of 'A' overlapping in futuristic faceted symmetry -->
+    <path
+      d="M256 92
+         L300 92
+         C310 92 319 98 324 107
+         L416 384
+         C420 396 411 408 398 408
+         L340 408
+         C330 408 321 402 317 392
+         L286 290
+         L234 290
+         L256 92 Z"
+      fill="url(#rightWing)"
+    />
+
+    <!-- Dynamic High-Tech Crossbar Beam (The horizontal bridging element of 'A') -->
+    <polygon
+      points="174,310 338,310 324,264 188,264"
+      fill="url(#beamGrad)"
+      filter="url(#softGlow)"
+    />
+
+    <!-- Inner Triangular Negative Space Apex -->
+    <polygon
+      points="256,156 220,244 292,244"
+      fill="#070B14"
+      opacity="0.95"
+    />
+
+    <!-- Apex Highlight Notch -->
+    <polygon
+      points="256,92 270,140 242,140"
+      fill="#38BDF8"
+      opacity="0.8"
+    />
+  </g>
+</svg>
