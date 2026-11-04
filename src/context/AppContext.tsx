@@ -201,51 +201,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Synchronize when currentWorkspace changes (Zero data leakage across workspaces)
   useEffect(() => {
-    if (currentWorkspace?.id) {
-      // Immediately reset domain collections to prevent stale data display from previous workspace
-      setTasks([]);
-      setProjects([]);
-      setClients([]);
-      setTransactions([]);
-      setGoals([]);
-      setPriorities([]);
-      setDevelopmentPlan([]);
-      setMembers([]);
+    const targetWorkspaceId = currentWorkspace?.id;
+    if (!targetWorkspaceId) return;
 
-      // Update workspace settings
-      setSettings((prev) => ({
-        ...prev,
-        workspaceName: currentWorkspace.name,
-        workspaceDescription: currentWorkspace.description,
-        workspaceAvatar: currentWorkspace.avatar,
-        currentUser: profile
-          ? {
-              id: profile.id,
-              name: profile.fullName,
-              email: profile.email,
-              position: profile.position || 'Специалист',
-              role: 'owner',
-              avatar: profile.avatarUrl || '',
-            }
-          : prev.currentUser,
-      }));
+    let isCancelled = false;
 
-      // Asynchronously fetch cloud data
-      cloudDataService.loadWorkspaceData(currentWorkspace.id).then((data) => {
-        if (data) {
-          setTasks(data.tasks || []);
-          setProjects(data.projects || []);
-          setClients(data.clients || []);
-          setTransactions(data.transactions || []);
-          setGoals(data.goals || []);
-          setPriorities(data.priorities || []);
-          setDevelopmentPlan(data.plans || []);
-          if (data.mission) setMission(data.mission);
-          if (data.vision) setVision(data.vision);
-          setMembers(data.members || []);
-        }
-      });
-    }
+    // Immediately reset domain collections to prevent stale data display from previous workspace
+    setTasks([]);
+    setProjects([]);
+    setClients([]);
+    setTransactions([]);
+    setGoals([]);
+    setPriorities([]);
+    setDevelopmentPlan([]);
+    setMembers([]);
+
+    // Update workspace settings
+    setSettings((prev) => ({
+      ...prev,
+      workspaceName: currentWorkspace.name,
+      workspaceDescription: currentWorkspace.description,
+      workspaceAvatar: currentWorkspace.avatar,
+      currentUser: profile
+        ? {
+            id: profile.id,
+            name: profile.fullName,
+            email: profile.email,
+            position: profile.position || 'Специалист',
+            role: 'owner',
+            avatar: profile.avatarUrl || '',
+          }
+        : prev.currentUser,
+    }));
+
+    // Asynchronously fetch cloud data with race condition protection
+    cloudDataService.loadWorkspaceData(targetWorkspaceId).then((data) => {
+      if (isCancelled) return;
+      if (data) {
+        setTasks(data.tasks || []);
+        setProjects(data.projects || []);
+        setClients(data.clients || []);
+        setTransactions(data.transactions || []);
+        setGoals(data.goals || []);
+        setPriorities(data.priorities || []);
+        setDevelopmentPlan(data.plans || []);
+        if (data.mission) setMission(data.mission);
+        if (data.vision) setVision(data.vision);
+        setMembers(data.members || []);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [currentWorkspace?.id, profile]);
 
   // Modals & Panels

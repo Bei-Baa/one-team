@@ -1,25 +1,30 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl =
+const getSupabaseUrl = () =>
   (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) ||
-  import.meta.env?.VITE_SUPABASE_URL ||
-  '';
-const supabaseAnonKey =
-  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) ||
-  import.meta.env?.VITE_SUPABASE_ANON_KEY ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
   '';
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-    supabaseAnonKey &&
-    supabaseUrl.startsWith('http') &&
-    supabaseAnonKey.length > 20
-);
+const getSupabaseAnonKey = () =>
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+  '';
+
+export const getIsSupabaseConfigured = () => {
+  const url = getSupabaseUrl();
+  const key = getSupabaseAnonKey();
+  return Boolean(url && key && url.startsWith('http') && key.length > 20);
+};
+
+export const isSupabaseConfigured = getIsSupabaseConfigured();
 
 /**
  * Singleton Supabase client instance.
  * Automatically persists session to browser storage when available.
  */
+const supabaseUrl = getSupabaseUrl();
+const supabaseAnonKey = getSupabaseAnonKey();
+
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',

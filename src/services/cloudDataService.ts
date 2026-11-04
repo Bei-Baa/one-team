@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured, getIsSupabaseConfigured } from './supabaseClient';
 import {
   Task,
   Project,
@@ -19,7 +19,7 @@ export class CloudDataService {
    * Load entire active workspace dataset from Supabase PostgreSQL
    */
   async loadWorkspaceData(workspaceId: string) {
-    if (!isSupabaseConfigured || !workspaceId) return null;
+    if ((!isSupabaseConfigured && !getIsSupabaseConfigured?.()) || !workspaceId) return null;
 
     try {
       const [
@@ -47,41 +47,30 @@ export class CloudDataService {
         supabase.from('strategy_visions').select('*').eq('workspace_id', workspaceId).maybeSingle(),
         supabase.from('workspace_settings').select('*').eq('workspace_id', workspaceId).maybeSingle(),
         supabase.from('notifications').select('*').eq('workspace_id', workspaceId),
-        // Fetch workspace members; if PostgREST relation is pending schema reload or fails, fallback query ensures continuity
-        supabase
-          .from('workspace_members')
-          .select('*, profiles(*)')
-          .eq('workspace_id', workspaceId)
-          .then(async (res) => {
-            if (res.error) {
-              console.warn('workspace_members embedded query note:', res.error.message);
-              // Fallback: two-step query if foreign key relationship is not yet recognized by PostgREST
-              const { data: rawMembers, error: rawMembersErr } = await supabase
-                .from('workspace_members')
-                .select('*')
-                .eq('workspace_id', workspaceId);
-
-              if (rawMembersErr || !rawMembers) return res;
-
-              const userIds = rawMembers.map((m: any) => m.user_id).filter(Boolean);
-              if (userIds.length === 0) return { ...res, error: null, data: [] };
-
-              const { data: profiles } = await supabase
-                .from('profiles')
-                .select('*')
-                .in('id', userIds);
-
-              const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-              const merged = rawMembers.map((m: any) => ({
-                ...m,
-                profiles: profileMap.get(m.user_id) || null,
-              }));
-
-              return { ...res, error: null, data: merged };
-            }
-            return res;
-          }),
+        supabase.from('workspace_members').select('*').eq('workspace_id', workspaceId),
       ]);
+
+      if (membersRes.error) {
+        throw membersRes.error;
+      }
+
+      // Fetch profiles in batch for all workspace members
+      const rawMembers = membersRes.data || [];
+      const userIds = Array.from(
+        new Set(rawMembers.map((m: any) => m.user_id).filter((id: string) => Boolean(id) && this.isValidUUID(id)))
+      );
+
+      let profilesRes: any = { data: [] };
+      if (userIds.length > 0) {
+        profilesRes = await supabase.from('profiles').select('*').in('id', userIds);
+        if (profilesRes.error) {
+          throw profilesRes.error;
+        }
+      }
+
+      const profileMap = new Map<string, any>(
+        (profilesRes.data || []).map((p: any) => [p.id, p])
+      );
 
       const tasks: Task[] = (tasksRes.data || []).map((t) => ({
         id: t.id,
@@ -196,18 +185,21 @@ export class CloudDataService {
         order: pl.sort_order,
       }));
 
-      const members: TeamMember[] = (membersRes.data || []).map((m: any) => ({
-        id: m.user_id,
-        name: m.profiles?.full_name || 'Участник',
-        position: m.profiles?.position || 'Специалист',
-        role: m.role,
-        email: m.profiles?.email || '',
-        avatar: m.profiles?.avatar_url || '',
-        isOnline: Boolean(m.profiles?.is_online),
-        workload: 30,
-        assignedProjectIds: [],
-        department: m.profiles?.department || 'Разработка',
-      }));
+      const members: TeamMember[] = rawMembers.map((m: any) => {
+        const prof = profileMap.get(m.user_id);
+        return {
+          id: m.user_id,
+          name: prof?.full_name || 'Участник',
+          position: prof?.position || 'Специалист',
+          role: m.role,
+          email: prof?.email || '',
+          avatar: prof?.avatar_url || '',
+          isOnline: Boolean(prof?.is_online),
+          workload: 30,
+          assignedProjectIds: [],
+          department: prof?.department || 'Разработка',
+        };
+      });
 
       return {
         tasks,

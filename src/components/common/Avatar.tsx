@@ -1,4 +1,5 @@
 import React from 'react';
+import { normalizeImageUrl, getInitials } from '../../utils/imageUrl';
 
 interface AvatarProps {
   src?: string;
@@ -21,6 +22,13 @@ export const Avatar: React.FC<AvatarProps> = ({
 }) => {
   const [imageError, setImageError] = React.useState(false);
 
+  const normalizedSrc = normalizeImageUrl(src);
+
+  // Reset error when source changes
+  React.useEffect(() => {
+    setImageError(false);
+  }, [normalizedSrc]);
+
   const sizeClasses = {
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
@@ -37,22 +45,16 @@ export const Avatar: React.FC<AvatarProps> = ({
     xl: 'w-4 h-4 bottom-1 right-1',
   };
 
-  // Get up to 2 initials
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
+  const initials = getInitials(name);
 
   return (
     <div
       title={title || name}
       className={`relative inline-block shrink-0 ${className}`}
     >
-      {src && !imageError ? (
+      {normalizedSrc && !imageError ? (
         <img
-          src={src}
+          src={normalizedSrc}
           alt={name}
           referrerPolicy="no-referrer"
           onError={() => setImageError(true)}
@@ -60,7 +62,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         />
       ) : (
         <div
-          className={`${sizeClasses[size]} rounded-full bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-semibold flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10`}
+          className={`${sizeClasses[size]} rounded-full bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 font-semibold flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10 select-none`}
         >
           {initials || '?'}
         </div>
