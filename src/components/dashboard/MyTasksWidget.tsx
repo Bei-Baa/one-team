@@ -62,69 +62,84 @@ export const MyTasksWidget: React.FC = () => {
         </div>
 
         {/* Task rows */}
-        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 mt-1">
-          {displayTasks.map((task) => {
-            const dateInfo = formatDueDateLabel(task.dueDate);
-            return (
-              <div
-                key={task.id}
-                className="py-3 px-2 rounded-xl flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
-                onClick={() => setSelectedTaskId(task.id)}
-              >
-                {/* Left: Checkbox + Title */}
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleTaskCompletion(task.id);
-                    }}
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all duration-150 cursor-pointer ${
-                      task.completed
-                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
-                        : 'border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
-                    }`}
-                    aria-label={task.completed ? 'Отметить как невыполненную' : 'Отметить как выполненную'}
-                  >
-                    {task.completed && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
-                  </button>
-
-                  <div className="truncate">
-                    <span
-                      className={`text-sm font-medium transition-all ${
+        {displayTasks.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 text-xs">
+            <Check className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+            <p className="font-medium text-slate-600 dark:text-slate-300">Список задач пуст</p>
+            <p className="text-[11px] text-slate-400 mt-1">Создайте новую задачу, чтобы начать работу</p>
+            <button
+              onClick={() => openCreateTask()}
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Создать задачу</span>
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/60 mt-1">
+            {displayTasks.map((task) => {
+              const dateInfo = formatDueDateLabel(task.dueDate);
+              return (
+                <div
+                  key={task.id}
+                  className="py-3 px-2 rounded-xl flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group cursor-pointer"
+                  onClick={() => setSelectedTaskId(task.id)}
+                >
+                  {/* Left: Checkbox + Title */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTaskCompletion(task.id);
+                      }}
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all duration-150 cursor-pointer ${
                         task.completed
-                          ? 'line-through text-slate-400 dark:text-slate-500'
-                          : 'text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                          : 'border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
+                      }`}
+                      aria-label={task.completed ? 'Отметить как невыполненную' : 'Отметить как выполненную'}
+                    >
+                      {task.completed && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                    </button>
+
+                    <div className="truncate">
+                      <span
+                        className={`text-sm font-medium transition-all ${
+                          task.completed
+                            ? 'line-through text-slate-400 dark:text-slate-500'
+                            : 'text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+                        }`}
+                      >
+                        {task.title}
+                      </span>
+                      {task.projectName && (
+                        <span className="hidden sm:inline-block text-[11px] text-slate-400 ml-2">
+                          · {task.projectName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Priority + Due Date */}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <PriorityBadge priority={task.priority} size="sm" />
+                    <span
+                      className={`text-[11px] font-medium font-mono tabular-nums flex items-center gap-1 ${
+                        dateInfo.isUrgent
+                          ? 'text-rose-600 dark:text-rose-400 font-semibold'
+                          : 'text-slate-400 dark:text-slate-500'
                       }`}
                     >
-                      {task.title}
+                      <Calendar className="w-3 h-3" />
+                      {dateInfo.label}
                     </span>
-                    {task.projectName && (
-                      <span className="hidden sm:inline-block text-[11px] text-slate-400 ml-2">
-                        · {task.projectName}
-                      </span>
-                    )}
                   </div>
                 </div>
-
-                {/* Right: Priority + Due Date */}
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <PriorityBadge priority={task.priority} size="sm" />
-                  <span
-                    className={`text-[11px] font-medium font-mono tabular-nums flex items-center gap-1 ${
-                      dateInfo.isUrgent
-                        ? 'text-rose-600 dark:text-rose-400 font-semibold'
-                        : 'text-slate-400 dark:text-slate-500'
-                    }`}
-                  >
-                    <Calendar className="w-3 h-3" />
-                    {dateInfo.label}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="pt-3 mt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">

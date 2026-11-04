@@ -24,6 +24,7 @@ export const Sidebar: React.FC = () => {
     sidebarCollapsed,
     setSidebarCollapsed,
     settings,
+    members,
   } = useApp();
 
   const navItems: { id: PageId; label: string; icon: React.ElementType }[] = [
@@ -134,7 +135,9 @@ export const Sidebar: React.FC = () => {
                 <div className="text-xs font-semibold text-white truncate">
                   {settings.workspaceName}
                 </div>
-                <div className="text-[10px] text-slate-400">9 разделов · 4 участника</div>
+                <div className="text-[10px] text-slate-400">
+                  9 разделов · {members.length} {members.length === 1 ? 'участник' : 'участников'}
+                </div>
               </div>
             </div>
             <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />

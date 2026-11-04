@@ -66,25 +66,17 @@ class StorageService {
     if (typeof window === 'undefined' || typeof indexedDB === 'undefined') return;
     try {
       await indexedDbEngine.getDb();
-      // Check if IndexedDB has tasks, otherwise seed with current tasks
-      const idbTasks = await indexedDbEngine.getAll<Task>(STORES.TASKS);
-      if (idbTasks.length === 0 && !this.isDemoCleaned()) {
-        const curTasks = this.getTasks();
-        if (curTasks.length > 0) {
-          await indexedDbEngine.setAll(STORES.TASKS, curTasks);
-          await indexedDbEngine.setAll(STORES.PROJECTS, this.getProjects());
-          await indexedDbEngine.setAll(STORES.MEMBERS, this.getMembers());
-          await indexedDbEngine.setAll(STORES.CLIENTS, this.getClients());
-          await indexedDbEngine.setAll(STORES.TRANSACTIONS, this.getTransactions());
-          await indexedDbEngine.setAll(STORES.GOALS, this.getStrategicGoals());
-          await indexedDbEngine.setAll(STORES.PRIORITIES, this.getStrategicPriorities());
-          await indexedDbEngine.setAll(STORES.PLAN, this.getDevelopmentPlan());
-          await indexedDbEngine.setAll(STORES.NOTIFICATIONS, this.getNotifications());
-          await indexedDbEngine.put(STORES.SETTINGS, { id: 'current', ...this.getSettings() });
-          const mission = this.getStrategyMission();
-          await indexedDbEngine.put(STORES.MISSION, { ...mission, id: mission.id || 'mission-1' });
-          const vision = this.getStrategyVision();
-          await indexedDbEngine.put(STORES.VISION, { ...vision, id: vision.id || 'vision-1' });
+      // Ensure settings and local user profile are persisted if present in localStorage,
+      // but strictly NEVER automatically seed demo business records.
+      const idbSettings = await indexedDbEngine.get(STORES.SETTINGS, 'current');
+      if (!idbSettings) {
+        await indexedDbEngine.put(STORES.SETTINGS, { id: 'current', ...this.getSettings() });
+      }
+      const idbMembers = await indexedDbEngine.getAll<TeamMember>(STORES.MEMBERS);
+      if (idbMembers.length === 0) {
+        const curMembers = this.getMembers();
+        if (curMembers.length > 0) {
+          await indexedDbEngine.setAll(STORES.MEMBERS, curMembers);
         }
       }
     } catch (e) {
@@ -129,7 +121,7 @@ class StorageService {
 
   // Tasks
   getTasks(): Task[] {
-    return this.safeGet<Task[]>(STORAGE_KEYS.TASKS, INITIAL_TASKS);
+    return this.safeGet<Task[]>(STORAGE_KEYS.TASKS, []);
   }
 
   saveTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Task {
@@ -266,7 +258,7 @@ class StorageService {
 
   // Projects
   getProjects(): Project[] {
-    return this.safeGet<Project[]>(STORAGE_KEYS.PROJECTS, INITIAL_PROJECTS);
+    return this.safeGet<Project[]>(STORAGE_KEYS.PROJECTS, []);
   }
 
   saveProject(project: Omit<Project, 'id' | 'createdAt'> & { id?: string }): Project {
@@ -350,7 +342,7 @@ class StorageService {
 
   // Clients
   getClients(): Client[] {
-    return this.safeGet<Client[]>(STORAGE_KEYS.CLIENTS, INITIAL_CLIENTS);
+    return this.safeGet<Client[]>(STORAGE_KEYS.CLIENTS, []);
   }
 
   saveClient(client: Omit<Client, 'id' | 'createdAt'> & { id?: string }): Client {
@@ -435,7 +427,7 @@ class StorageService {
 
   // Transactions (Finance)
   getTransactions(): Transaction[] {
-    return this.safeGet<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, INITIAL_TRANSACTIONS);
+    return this.safeGet<Transaction[]>(STORAGE_KEYS.TRANSACTIONS, []);
   }
 
   saveTransaction(tx: Omit<Transaction, 'id' | 'createdAt'> & { id?: string }): Transaction {
@@ -491,7 +483,7 @@ class StorageService {
   }
 
   getStrategicGoals(): StrategicGoal[] {
-    return this.safeGet<StrategicGoal[]>(STORAGE_KEYS.GOALS, INITIAL_STRATEGIC_GOALS);
+    return this.safeGet<StrategicGoal[]>(STORAGE_KEYS.GOALS, []);
   }
 
   saveStrategicGoal(goal: Omit<StrategicGoal, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): StrategicGoal {
@@ -530,7 +522,7 @@ class StorageService {
   }
 
   getStrategicPriorities(): StrategicPriority[] {
-    return this.safeGet<StrategicPriority[]>(STORAGE_KEYS.PRIORITIES, INITIAL_STRATEGIC_PRIORITIES);
+    return this.safeGet<StrategicPriority[]>(STORAGE_KEYS.PRIORITIES, []);
   }
 
   saveStrategicPriority(priority: Omit<StrategicPriority, 'id'> & { id?: string }): StrategicPriority {
@@ -566,7 +558,7 @@ class StorageService {
   }
 
   getDevelopmentPlan(): DevelopmentPlanItem[] {
-    return this.safeGet<DevelopmentPlanItem[]>(STORAGE_KEYS.PLAN, INITIAL_DEVELOPMENT_PLAN);
+    return this.safeGet<DevelopmentPlanItem[]>(STORAGE_KEYS.PLAN, []);
   }
 
   saveDevelopmentPlanItem(item: Omit<DevelopmentPlanItem, 'id'> & { id?: string }): DevelopmentPlanItem {
@@ -620,7 +612,7 @@ class StorageService {
   getNotifications(): NotificationItem[] {
     return this.safeGet<NotificationItem[]>(
       STORAGE_KEYS.NOTIFICATIONS,
-      this.isDemoCleaned() ? [] : INITIAL_NOTIFICATIONS
+      []
     );
   }
 

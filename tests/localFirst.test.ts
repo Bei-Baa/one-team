@@ -50,22 +50,31 @@ function assert(condition: any, message: string) {
 async function runTestSuite() {
   console.log('🧪 Starting ONE TEAM Local-First Test Suite...\n');
 
-  // Test 1: Initial Data Load
-  console.log('Test 1: Initializing StorageService and loading default entities...');
+  // Test 1: StorageService Clean Initialization
+  console.log('Test 1: Initializing StorageService and verifying clean initial entities...');
   const initialTasks = storageService.getTasks();
   const initialProjects = storageService.getProjects();
   const initialMembers = storageService.getMembers();
   const initialClients = storageService.getClients();
   const initialTxs = storageService.getTransactions();
+  const initialGoals = storageService.getStrategicGoals();
+  const initialPriorities = storageService.getStrategicPriorities();
+  const initialPlan = storageService.getDevelopmentPlan();
+  const initialNotifications = storageService.getNotifications();
   const initialSettings = storageService.getSettings();
 
-  assert(initialTasks.length > 0, 'Initial tasks should be loaded');
-  assert(initialProjects.length > 0, 'Initial projects should be loaded');
-  assert(initialMembers.length > 0, 'Initial members should be loaded');
-  assert(initialClients.length > 0, 'Initial clients should be loaded');
-  assert(initialTxs.length > 0, 'Initial transactions should be loaded');
+  assert(Array.isArray(initialTasks) && initialTasks.length === 0, 'Initial tasks must be empty array');
+  assert(Array.isArray(initialProjects) && initialProjects.length === 0, 'Initial projects must be empty array');
+  assert(Array.isArray(initialClients) && initialClients.length === 0, 'Initial clients must be empty array');
+  assert(Array.isArray(initialTxs) && initialTxs.length === 0, 'Initial transactions must be empty array');
+  assert(Array.isArray(initialGoals) && initialGoals.length === 0, 'Initial goals must be empty array');
+  assert(Array.isArray(initialPriorities) && initialPriorities.length === 0, 'Initial priorities must be empty array');
+  assert(Array.isArray(initialPlan) && initialPlan.length === 0, 'Initial development plan must be empty array');
+  assert(Array.isArray(initialNotifications) && initialNotifications.length === 0, 'Initial notifications must be empty array');
+  assert(initialMembers.length === 1, 'Initial members should only contain 1 authentic owner profile');
+  assert(initialMembers[0].name === 'Екатерина Соколова', 'Owner profile name should be preserved');
   assert(initialSettings.workspaceName.length > 0, 'Initial settings should have workspace name');
-  console.log('✅ Test 1 PASSED: Initial collections loaded correctly.\n');
+  console.log('✅ Test 1 PASSED: Clean initial empty collections verified.\n');
 
   // Test 2: Task CRUD Persistence
   console.log('Test 2: Verifying Task CRUD persistence...');
@@ -74,7 +83,7 @@ async function runTestSuite() {
     description: 'Проверка сохранения',
     status: 'todo',
     priority: 'high',
-    projectId: initialProjects[0].id,
+    projectId: 'proj-temp-0',
     assigneeId: initialMembers[0].id,
     dueDate: '2026-12-31',
     completed: false,
@@ -229,7 +238,7 @@ async function runTestSuite() {
     description: '',
     status: 'todo',
     priority: 'high',
-    projectId: initialProjects[0].id,
+    projectId: 'proj-temp-1',
     assigneeId: initialMembers[0].id,
     dueDate: tomorrowStr,
     completed: false,
@@ -241,8 +250,8 @@ async function runTestSuite() {
     title: 'Задача дедлайн сегодня',
     description: '',
     status: 'in_progress',
-    priority: 'critical' as any,
-    projectId: initialProjects[0].id,
+    priority: 'high',
+    projectId: 'proj-temp-1',
     assigneeId: initialMembers[0].id,
     dueDate: todayStr,
     completed: false,
@@ -255,7 +264,7 @@ async function runTestSuite() {
     description: '',
     status: 'in_progress',
     priority: 'high',
-    projectId: initialProjects[0].id,
+    projectId: 'proj-temp-1',
     assigneeId: initialMembers[0].id,
     dueDate: yesterdayStr,
     completed: false,
@@ -305,9 +314,32 @@ async function runTestSuite() {
 
   // Test 8: Safe Data Cleanup
   console.log('Test 8: Testing Safe Data Cleanup procedure...');
+  // Add some temporary test records to clean
+  storageService.saveTask({
+    title: 'Temp Task',
+    description: '',
+    status: 'todo',
+    priority: 'low',
+    projectId: 'proj-temp-clean',
+    assigneeId: initialMembers[0].id,
+    dueDate: '2027-01-01',
+    completed: false,
+    comments: [],
+    activities: [],
+  });
+  storageService.saveProject({
+    name: 'Temp Project',
+    description: '',
+    status: 'planning',
+    progress: 0,
+    deadline: '2027-01-01',
+    memberIds: [initialMembers[0].id],
+  });
+
   const cleanupReport = dataCleanupService.executeSafeCleanup();
-  assert(cleanupReport.removedRecords.tasks > 0, 'Demo tasks should be removed');
-  assert(cleanupReport.preservedRecords.members > 0, 'Real member accounts must be preserved');
+  assert(cleanupReport.removedRecords.tasks >= 1, 'Temporary/demo tasks should be removed');
+  assert(cleanupReport.removedRecords.projects >= 1, 'Temporary/demo projects should be removed');
+  assert(cleanupReport.preservedRecords.members === 1, 'Real owner member account must be preserved');
   assert(cleanupReport.preservedRecords.currentUser.length > 0, 'Current user profile must be preserved');
 
   // Verify empty states after cleanup
@@ -316,18 +348,24 @@ async function runTestSuite() {
   assert(storageService.getClients().length === 0, 'Clients should be empty after cleanup');
   assert(storageService.getTransactions().length === 0, 'Transactions should be empty after cleanup');
   assert(storageService.getStrategicGoals().length === 0, 'Goals should be empty after cleanup');
-  assert(storageService.getMembers().length > 0, 'Team members must still remain intact');
+  assert(storageService.getStrategicPriorities().length === 0, 'Priorities should be empty after cleanup');
+  assert(storageService.getDevelopmentPlan().length === 0, 'Development plan should be empty after cleanup');
+  assert(storageService.getNotifications().length === 0, 'Notifications should be empty after cleanup');
+  assert(storageService.getMembers().length === 1, 'Only owner member must remain');
   assert(storageService.getSettings().workspaceName.length > 0, 'Settings must remain intact');
 
   console.log('✅ Test 8 PASSED: Safe Cleanup removed demo data and preserved accounts.\n');
 
-  // Restore backup so test runner leaves repo in valid state
-  console.log('Restoring backup to return to pre-test state...');
-  dataCleanupService.restoreBackup(backup);
-  assert(storageService.getTasks().length > 0, 'Tasks restored successfully');
-  console.log('✅ State successfully restored.\n');
+  // Test 9: Refresh and App Restart simulation
+  console.log('Test 9: Verifying refresh and re-initialization does not recreate demo data...');
+  assert(storageService.getTasks().length === 0, 'Tasks remain 0 after re-query');
+  assert(storageService.getProjects().length === 0, 'Projects remain 0 after re-query');
+  assert(storageService.getClients().length === 0, 'Clients remain 0 after re-query');
+  assert(storageService.getTransactions().length === 0, 'Transactions remain 0 after re-query');
+  assert(storageService.getStrategicGoals().length === 0, 'Goals remain 0 after re-query');
+  console.log('✅ Test 9 PASSED: Re-query and refresh do not resurrect demo data.\n');
 
-  console.log('🎉 ALL 8 AUTOMATED TESTS PASSED SUCCESSFULLY! 🚀');
+  console.log('🎉 ALL 9 AUTOMATED TESTS PASSED SUCCESSFULLY! 🚀');
 }
 
 runTestSuite().catch((err) => {

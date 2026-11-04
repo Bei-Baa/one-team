@@ -83,48 +83,56 @@ export const KeyPrioritiesPanel: React.FC<{ compact?: boolean }> = ({ compact = 
         </div>
 
         {/* Priority items list matching reference */}
-        <div className="space-y-3">
-          {priorities.slice(0, 5).map((priority: StrategicPriority, idx: number) => {
-            const progress = priority.progress ?? 70;
-            return (
-              <div
-                key={priority.id}
-                onClick={() => openEditPriority(priority)}
-                className="group p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-blue-900/60 transition-all duration-150 cursor-pointer"
-              >
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 shadow-2xs border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center shrink-0">
-                      {getPriorityIcon(idx)}
+        {priorities.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-xs">
+            <Target className="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+            <p className="font-medium text-slate-600 dark:text-slate-300">Приоритеты не заданы</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Определите главный фокус для команды</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {priorities.slice(0, 5).map((priority: StrategicPriority, idx: number) => {
+              const progress = priority.progress ?? 0;
+              return (
+                <div
+                  key={priority.id}
+                  onClick={() => openEditPriority(priority)}
+                  className="group p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800/80 hover:border-blue-200 dark:hover:border-blue-900/60 transition-all duration-150 cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 shadow-2xs border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center shrink-0">
+                        {getPriorityIcon(idx)}
+                      </div>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        {priority.name}
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {priority.name}
-                    </span>
+                    {getImportanceBadge(priority.importance)}
                   </div>
-                  {getImportanceBadge(priority.importance)}
-                </div>
 
-                {/* Progress bar */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
-                    <span className="truncate max-w-[170px] text-[10px]">
-                      {priority.expectedResult || priority.ownerName}
-                    </span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
-                      {progress}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200/80 dark:bg-slate-700/60 h-1.5 rounded-full overflow-hidden">
-                    <div
-                      className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
+                  {/* Progress bar */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span className="truncate max-w-[170px] text-[10px]">
+                        {priority.expectedResult || priority.ownerName}
+                      </span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {progress}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-200/80 dark:bg-slate-700/60 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Inspiring quote box at the bottom (From reference Screen 2) */}

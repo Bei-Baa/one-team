@@ -14,14 +14,15 @@ export const KpiCards: React.FC = () => {
 
   // Calculate average team progress across active projects
   const totalProgress = activeProjects.reduce((acc, p) => acc + (p.progress || 0), 0);
-  const avgProgress = activeProjects.length > 0 ? Math.round(totalProgress / activeProjects.length) : 76;
+  const avgProgress = activeProjects.length > 0 ? Math.round(totalProgress / activeProjects.length) : 0;
+  const completedProjectsCount = projects.filter((p) => p.status === 'completed').length;
 
   const cards = [
     {
       title: 'Мои активные задачи',
       value: myTasks.length,
-      subValue: 'требуют внимания',
-      change: '+2 новые',
+      subValue: myTasks.length > 0 ? 'требуют внимания' : 'нет активных задач',
+      change: myTasks.length > 0 ? `${myTasks.length} в работе` : '0 задач',
       trend: 'neutral',
       icon: CheckCircle2,
       iconColor: 'text-blue-600 dark:text-blue-400',
@@ -32,8 +33,8 @@ export const KpiCards: React.FC = () => {
       title: 'Задачи команды',
       value: teamActiveTasks.length,
       subValue: `из ${tasks.length} всего`,
-      change: '+8% за неделю',
-      trend: 'up',
+      change: tasks.length > 0 ? `${tasks.length - teamActiveTasks.length} завершено` : '0 задач',
+      trend: 'neutral',
       icon: ListTodo,
       iconColor: 'text-indigo-600 dark:text-indigo-400',
       iconBg: 'bg-indigo-50 dark:bg-indigo-950/40',
@@ -43,7 +44,7 @@ export const KpiCards: React.FC = () => {
       title: 'Активные проекты',
       value: activeProjects.length,
       subValue: 'в производстве',
-      change: '1 завершён',
+      change: `${completedProjectsCount} завершено`,
       trend: 'neutral',
       icon: FolderGit2,
       iconColor: 'text-purple-600 dark:text-purple-400',
@@ -53,9 +54,9 @@ export const KpiCards: React.FC = () => {
     {
       title: 'Общий прогресс команды',
       value: `${avgProgress}%`,
-      subValue: 'к цели месяца',
-      change: '+12% к прошлому',
-      trend: 'up',
+      subValue: activeProjects.length > 0 ? 'по активным проектам' : 'нет активных проектов',
+      change: `${activeProjects.length} проектов`,
+      trend: 'neutral',
       icon: TrendingUp,
       iconColor: 'text-emerald-600 dark:text-emerald-400',
       iconBg: 'bg-emerald-50 dark:bg-emerald-950/40',

@@ -16,49 +16,23 @@ import { Avatar } from '../common/Avatar';
 export const DashboardBottomWidgets: React.FC = () => {
   const { tasks, projects, members, setSelectedTaskId, setSelectedProjectId, setActivePage } = useApp();
 
-  // 1. Recent team activity (comments and recent task activities aggregated)
-  const recentActivities = [
-    {
-      id: 'act-1',
-      author: 'Мария Лебедева',
-      avatar: '/src/assets/images/avatar_maria_1793774893832.jpg',
-      text: 'добавила комментарий в "Запустить рекламную кампанию"',
-      time: '15 мин назад',
-      type: 'comment',
-      taskId: 'task-4',
-    },
-    {
-      id: 'act-2',
-      author: 'Дмитрий Кузнецов',
-      avatar: '/src/assets/images/avatar_dmitry_1793774893675.jpg',
-      text: 'перевёл задачу "Сверстать интерфейс" в статус На проверке',
-      time: '1 час назад',
-      type: 'status',
-      taskId: 'task-6',
-    },
-    {
-      id: 'act-3',
-      author: 'Екатерина Соколова',
-      avatar: '/src/assets/images/avatar_ekaterina_1793774893419.jpg',
-      text: 'обновила дедлайн проекта "AI Target для Celebrity Spa"',
-      time: '3 часа назад',
-      type: 'project',
-      projectId: 'proj-1',
-    },
-    {
-      id: 'act-4',
-      author: 'Антон Васильев',
-      avatar: '/src/assets/images/avatar_anton_1793774893419.jpg',
-      text: 'завершил задачу "Настроить сквозную аналитику"',
-      time: 'Вчера',
-      type: 'complete',
-      taskId: 'task-8',
-    },
-  ];
+  // 1. Recent team activity - dynamically aggregated strictly from real tasks activities and comments
+  const recentActivities = tasks.flatMap((t) =>
+    (t.activities || []).map((a) => ({
+      id: a.id,
+      author: a.authorName,
+      avatar: '',
+      text: `${a.action} в задаче "${t.title}"`,
+      time: a.timestamp,
+      type: 'task',
+      taskId: t.id,
+      projectId: t.projectId,
+    }))
+  ).slice(0, 5);
 
   // 2. Upcoming deadlines (sorted by dueDate)
   const upcomingDeadlines = [...tasks]
-    .filter((t) => !t.completed)
+    .filter((t) => !t.completed && t.dueDate)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
     .slice(0, 4);
 
@@ -77,32 +51,40 @@ export const DashboardBottomWidgets: React.FC = () => {
             </h4>
           </div>
 
-          <div className="space-y-3.5">
-            {recentActivities.map((act) => (
-              <div
-                key={act.id}
-                onClick={() => {
-                  if (act.taskId) {
-                    setSelectedTaskId(act.taskId);
-                    setActivePage('workspace');
-                  } else if (act.projectId) {
-                    setSelectedProjectId(act.projectId);
-                    setActivePage('projects');
-                  }
-                }}
-                className="flex items-start gap-2.5 p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
-              >
-                <Avatar src={act.avatar} name={act.author} size="xs" />
-                <div className="flex-1 min-w-0 text-xs">
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                    {act.author}{' '}
-                  </span>
-                  <span className="text-slate-600 dark:text-slate-400">{act.text}</span>
-                  <div className="text-[10px] text-slate-400 mt-0.5">{act.time}</div>
+          {recentActivities.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 text-xs">
+              <Clock className="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+              <p className="font-medium text-slate-600 dark:text-slate-300">Активность отсутствует</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Здесь будет отображаться история действий вашей команды</p>
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {recentActivities.map((act) => (
+                <div
+                  key={act.id}
+                  onClick={() => {
+                    if (act.taskId) {
+                      setSelectedTaskId(act.taskId);
+                      setActivePage('workspace');
+                    } else if (act.projectId) {
+                      setSelectedProjectId(act.projectId);
+                      setActivePage('projects');
+                    }
+                  }}
+                  className="flex items-start gap-2.5 p-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                >
+                  <Avatar src={act.avatar} name={act.author} size="xs" />
+                  <div className="flex-1 min-w-0 text-xs">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                      {act.author}{' '}
+                    </span>
+                    <span className="text-slate-600 dark:text-slate-400">{act.text}</span>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{act.time}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -119,31 +101,39 @@ export const DashboardBottomWidgets: React.FC = () => {
             </span>
           </div>
 
-          <div className="space-y-2.5">
-            {upcomingDeadlines.map((t) => (
-              <div
-                key={t.id}
-                onClick={() => {
-                  setSelectedTaskId(t.id);
-                  setActivePage('workspace');
-                }}
-                className="p-2 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate max-w-[170px]">
-                    {t.title}
-                  </span>
-                  <PriorityBadge priority={t.priority} size="sm" />
+          {upcomingDeadlines.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 text-xs">
+              <Calendar className="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+              <p className="font-medium text-slate-600 dark:text-slate-300">Дедлайнов нет</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Все текущие задачи выполнены в срок</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {upcomingDeadlines.map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => {
+                    setSelectedTaskId(t.id);
+                    setActivePage('workspace');
+                  }}
+                  className="p-2 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate max-w-[170px]">
+                      {t.title}
+                    </span>
+                    <PriorityBadge priority={t.priority} size="sm" />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{t.projectName}</span>
+                    <span className="font-mono text-amber-600 dark:text-amber-400 font-semibold">
+                      до {t.dueDate.split('-').slice(1).join('.')}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <span>{t.projectName}</span>
-                  <span className="font-mono text-amber-600 dark:text-amber-400 font-semibold">
-                    до {t.dueDate.split('-').slice(1).join('.')}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -163,31 +153,39 @@ export const DashboardBottomWidgets: React.FC = () => {
             </button>
           </div>
 
-          <div className="space-y-3">
-            {recentProjects.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => {
-                  setSelectedProjectId(p.id);
-                  setActivePage('projects');
-                }}
-                className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
-                    {p.name}
-                  </span>
-                  <StatusBadge status={p.status} type="project" />
+          {recentProjects.length === 0 ? (
+            <div className="py-8 text-center text-slate-400 text-xs">
+              <FolderGit2 className="w-6 h-6 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+              <p className="font-medium text-slate-600 dark:text-slate-300">Проектов нет</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Создайте проект для отслеживания стадий</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentProjects.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    setSelectedProjectId(p.id);
+                    setActivePage('projects');
+                  }}
+                  className="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate">
+                      {p.name}
+                    </span>
+                    <StatusBadge status={p.status} type="project" />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span>{p.category || 'Проект'}</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                      {p.progress}%
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-                  <span>{p.category || 'Проект'}</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-300">
-                    {p.progress}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

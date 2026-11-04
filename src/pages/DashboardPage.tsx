@@ -69,10 +69,10 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className="truncate">
               <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors block">
-                Стратегия 2026–2029
+                Стратегия
               </span>
               <span className="text-[11px] text-slate-400 truncate block">
-                Ясный курс · 4 цели
+                Стратегические цели и вектор развития
               </span>
             </div>
           </div>
@@ -89,10 +89,10 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className="truncate">
               <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 transition-colors block">
-                {totalIncome.toLocaleString('ru-RU')} ₸ доход
+                {totalIncome.toLocaleString('ru-RU')} {currency} доход
               </span>
               <span className="text-[11px] text-slate-400 truncate block">
-                Финансовый отчёт за октябрь
+                {transactions.length} финансовых операций
               </span>
             </div>
           </div>
@@ -131,10 +131,10 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className="truncate">
               <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition-colors block">
-                94% задач в срок
+                Аналитика
               </span>
               <span className="text-[11px] text-slate-400 truncate block">
-                Сводная аналитика спринтов
+                Показатели эффективности команды
               </span>
             </div>
           </div>

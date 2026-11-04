@@ -110,7 +110,8 @@ export const FinancePage: React.FC = () => {
     .reduce((acc, tx) => acc + tx.amount, 0);
 
   const netProfit = totalIncome - totalExpenses;
-  const currentBalance = totalIncome - totalExpenses + 2500000; // baseline liquidity balance
+  // Current balance strictly computed from actual transactions without fake baseline
+  const currentBalance = totalIncome - totalExpenses;
 
   // Expense categories breakdown
   const expenseCategoriesBreakdown = useMemo(() => {
@@ -129,15 +130,33 @@ export const FinancePage: React.FC = () => {
     }));
   }, [filteredTransactions]);
 
-  // Monthly dynamics points matching reference screen 4
-  const monthlyDynamics = [
-    { month: 'Май', income: 1400000, expense: 950000 },
-    { month: 'Июн', income: 1750000, expense: 1100000 },
-    { month: 'Июл', income: 2100000, expense: 1350000 },
-    { month: 'Авг', income: 2300000, expense: 1400000 },
-    { month: 'Сен', income: 2600000, expense: 1550000 },
-    { month: 'Окт', income: 2850000, expense: 1720000 },
-  ];
+  // Monthly dynamics calculated strictly from actual transactions grouped by month
+  const monthlyDynamics = useMemo(() => {
+    const monthsMap: Record<string, { income: number; expense: number }> = {};
+    transactions.forEach((tx) => {
+      const monthKey = tx.date.substring(0, 7); // e.g. "2026-10"
+      if (!monthsMap[monthKey]) {
+        monthsMap[monthKey] = { income: 0, expense: 0 };
+      }
+      if (tx.type === 'income') {
+        monthsMap[monthKey].income += tx.amount;
+      } else {
+        monthsMap[monthKey].expense += tx.amount;
+      }
+    });
+
+    const sortedMonths = Object.keys(monthsMap).sort();
+    return sortedMonths.map((mKey) => {
+      const [year, monthNum] = mKey.split('-');
+      const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      const mName = monthNames[parseInt(monthNum, 10) - 1] || mKey;
+      return {
+        month: `${mName} '${year.slice(2)}`,
+        income: monthsMap[mKey].income,
+        expense: monthsMap[mKey].expense,
+      };
+    });
+  }, [transactions]);
 
   // CSV Export handler
   const handleExportCSV = () => {
@@ -349,42 +368,50 @@ export const FinancePage: React.FC = () => {
             </div>
 
             {/* Monthly Dynamics Chart Visual */}
-            <div className="pt-4 pb-2">
-              <div className="h-56 flex items-end justify-between gap-3 px-2">
-                {monthlyDynamics.map((item, idx) => {
-                  const maxVal = 3000000;
-                  const incHeight = Math.round((item.income / maxVal) * 100);
-                  const expHeight = Math.round((item.expense / maxVal) * 100);
-
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                      <div className="w-full flex items-end justify-center gap-1.5 h-full">
-                        {/* Expense bar */}
-                        <div
-                          className="w-1/2 max-w-[20px] bg-purple-400/80 dark:bg-purple-900/60 rounded-t-md transition-all duration-300 hover:bg-purple-500"
-                          style={{ height: `${expHeight}%` }}
-                          title={`Расходы: ${formatMoney(item.expense)}`}
-                        />
-                        {/* Income bar */}
-                        <div
-                          className="w-1/2 max-w-[20px] bg-blue-600 hover:bg-blue-700 rounded-t-md transition-all duration-300"
-                          style={{ height: `${incHeight}%` }}
-                          title={`Выручка: ${formatMoney(item.income)}`}
-                        />
-                      </div>
-                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 font-mono">
-                        {item.month}
-                      </span>
-                    </div>
-                  );
-                })}
+            {monthlyDynamics.length === 0 ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-400 text-xs">
+                <TrendingUp className="w-8 h-8 text-slate-300 dark:text-slate-700 mb-2" />
+                <p className="font-medium text-slate-600 dark:text-slate-300">Данные динамики отсутствуют</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Добавьте доходы и расходы для построения динамики</p>
               </div>
-            </div>
+            ) : (
+              <div className="pt-4 pb-2">
+                <div className="h-56 flex items-end justify-between gap-3 px-2">
+                  {monthlyDynamics.map((item, idx) => {
+                    const maxVal = Math.max(...monthlyDynamics.map((m) => Math.max(m.income, m.expense)), 1);
+                    const incHeight = Math.round((item.income / maxVal) * 100);
+                    const expHeight = Math.round((item.expense / maxVal) * 100);
+
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                        <div className="w-full flex items-end justify-center gap-1.5 h-full">
+                          {/* Expense bar */}
+                          <div
+                            className="w-1/2 max-w-[20px] bg-purple-400/80 dark:bg-purple-900/60 rounded-t-md transition-all duration-300 hover:bg-purple-500"
+                            style={{ height: `${expHeight}%` }}
+                            title={`Расходы: ${formatMoney(item.expense)}`}
+                          />
+                          {/* Income bar */}
+                          <div
+                            className="w-1/2 max-w-[20px] bg-blue-600 hover:bg-blue-700 rounded-t-md transition-all duration-300"
+                            style={{ height: `${incHeight}%` }}
+                            title={`Выручка: ${formatMoney(item.income)}`}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 font-mono">
+                          {item.month}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Стабильный восходящий тренд доходности</span>
-            <span className="font-mono text-emerald-600 font-semibold">+28% чистой прибыли за полугодие</span>
+            <span>Локальный учёт финансов</span>
+            <span className="font-mono text-slate-600 dark:text-slate-300">{transactions.length} операций</span>
           </div>
         </div>
 
