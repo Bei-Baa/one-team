@@ -15,6 +15,66 @@ export type Priority = 'low' | 'medium' | 'high';
 
 export type TeamRole = 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
 
+export interface UserPermissionCheck {
+  canManageSettings: boolean;
+  canManageTeam: boolean;
+  canManageProjects: boolean;
+  canManageTasks: boolean;
+  canManageFinance: boolean;
+  canManageStrategy: boolean;
+}
+
+export function getRolePermissions(role: TeamRole): UserPermissionCheck {
+  switch (role) {
+    case 'owner':
+      return {
+        canManageSettings: true,
+        canManageTeam: true,
+        canManageProjects: true,
+        canManageTasks: true,
+        canManageFinance: true,
+        canManageStrategy: true,
+      };
+    case 'admin':
+      return {
+        canManageSettings: true,
+        canManageTeam: true,
+        canManageProjects: true,
+        canManageTasks: true,
+        canManageFinance: true,
+        canManageStrategy: true,
+      };
+    case 'manager':
+      return {
+        canManageSettings: false,
+        canManageTeam: false,
+        canManageProjects: true,
+        canManageTasks: true,
+        canManageFinance: false,
+        canManageStrategy: true,
+      };
+    case 'member':
+      return {
+        canManageSettings: false,
+        canManageTeam: false,
+        canManageProjects: false,
+        canManageTasks: true,
+        canManageFinance: false,
+        canManageStrategy: false,
+      };
+    case 'viewer':
+    default:
+      return {
+        canManageSettings: false,
+        canManageTeam: false,
+        canManageProjects: false,
+        canManageTasks: false,
+        canManageFinance: false,
+        canManageStrategy: false,
+      };
+  }
+}
+
 export type ProjectStatus = 'planning' | 'in_progress' | 'review' | 'completed';
 
 export interface TaskComment {

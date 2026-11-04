@@ -19,18 +19,23 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { ThemeMode, TeamRole } from '../types';
 import { Avatar } from '../components/common/Avatar';
 import { storageService } from '../services/storage';
 import { dataCleanupService } from '../services/dataCleanup';
 
-type SettingsTab = 'general' | 'appearance' | 'team' | 'notifications' | 'sync' | 'profile';
+type SettingsTab = 'general' | 'appearance' | 'team' | 'notifications' | 'sync' | 'profile' | 'account';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, setTheme, members, refreshData } = useApp();
+  const { user, logout, updatePassword, isConfigured } = useAuth();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [passwordChangeStatus, setPasswordChangeStatus] = useState<string | null>(null);
 
   // Form states
   const [workspaceName, setWorkspaceName] = useState(settings.workspaceName);
@@ -185,6 +190,7 @@ export const SettingsPage: React.FC = () => {
     { id: 'notifications', label: 'Уведомления', icon: Bell },
     { id: 'sync', label: 'Синхронизация', icon: RefreshCw },
     { id: 'profile', label: 'Профиль', icon: User },
+    { id: 'account', label: 'Учётная запись', icon: Shield },
   ];
 
   return (
@@ -782,6 +788,142 @@ export const SettingsPage: React.FC = () => {
                     <span>Сбросить к исходному демо</span>
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ACCOUNT TAB */}
+          {activeTab === 'account' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Учётная запись и безопасность
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Управление аутентификацией, статусом верификации и параметрами локального сеанса
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-4 max-w-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-700/60">
+                  <div>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block">
+                      Электронная почта
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white font-mono mt-0.5 block">
+                      {settings.currentUser.email}
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                    <Check className="w-3 h-3 stroke-[2.5]" />
+                    <span>Верифицирован</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block">Роль в пространстве:</span>
+                    <span className="font-semibold text-slate-900 dark:text-white capitalize">
+                      {settings.currentUser.role === 'owner' ? 'Владелец (Owner)' : settings.currentUser.role}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Режим хранения данных:</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      Локальное (IndexedDB)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Password change form */}
+              <div className="space-y-4 max-w-xl pt-2">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Смена пароля
+                </h4>
+
+                {passwordChangeStatus && (
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300">
+                    {passwordChangeStatus}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Новый пароль
+                    </label>
+                    <input
+                      type="password"
+                      value={newPasswordInput}
+                      onChange={(e) => setNewPasswordInput(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Подтверждение нового пароля
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPasswordInput}
+                      onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newPasswordInput) {
+                        alert('Введите новый пароль');
+                        return;
+                      }
+                      if (newPasswordInput !== confirmPasswordInput) {
+                        alert('Пароли не совпадают');
+                        return;
+                      }
+                      try {
+                        if (isConfigured) {
+                          await updatePassword(newPasswordInput);
+                        }
+                        setPasswordChangeStatus('Пароль успешно обновлён.');
+                        setNewPasswordInput('');
+                        setConfirmPasswordInput('');
+                        triggerSaveNotice();
+                      } catch (err: any) {
+                        alert(`Ошибка при смене пароля: ${err.message}`);
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    Обновить пароль
+                  </button>
+                </div>
+              </div>
+
+              {/* Sign out */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 max-w-xl flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Завершение сеанса
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    При выходе локальные данные в IndexedDB строго сохраняются
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Завершить текущий сеанс? Локальные данные сохраняются в IndexedDB.')) {
+                      await logout();
+                    }
+                  }}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 hover:border-rose-300 transition-colors cursor-pointer"
+                >
+                  Выйти из системы
+                </button>
               </div>
             </div>
           )}

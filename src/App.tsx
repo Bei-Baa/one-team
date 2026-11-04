@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthScreen } from './components/auth/AuthScreen';
 import { reminderService } from './services/reminderService';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -176,10 +178,32 @@ const MainLayout: React.FC = () => {
   );
 };
 
+const AuthenticatedApp: React.FC = () => {
+  const { user, loading, isConfigured } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#F5F7FB] dark:bg-[#0B0F19]">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // If Supabase is configured and user is not logged in, enforce AuthScreen
+  if (isConfigured && !user) {
+    return <AuthScreen />;
+  }
+
+  // Local-first workspace with existing data intact
+  return <MainLayout />;
+};
+
 export default function App() {
   return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <AuthenticatedApp />
+      </AppProvider>
+    </AuthProvider>
   );
 }

@@ -39,7 +39,7 @@ import { storageService, STORAGE_KEYS } from '../src/services/storage';
 import { dataCleanupService } from '../src/services/dataCleanup';
 import { notificationService } from '../src/services/notificationService';
 import { reminderService } from '../src/services/reminderService';
-import { Task, Project, Client, Transaction } from '../src/types';
+import { Task, Project, Client, Transaction, getRolePermissions } from '../src/types';
 
 function assert(condition: any, message: string) {
   if (!condition) {
@@ -322,12 +322,27 @@ async function runTestSuite() {
   console.log('✅ Test 8 PASSED: Safe Cleanup removed demo data and preserved accounts.\n');
 
   // Restore backup so test runner leaves repo in valid state
+  // Test 9: Role-based permissions matrix
+  console.log('Test 9: Testing Role Permissions Matrix...');
+  const ownerPerms = getRolePermissions('owner');
+  const viewerPerms = getRolePermissions('viewer');
+  const managerPerms = getRolePermissions('manager');
+
+  assert(ownerPerms.canManageSettings === true, 'Owner should manage settings');
+  assert(ownerPerms.canManageFinance === true, 'Owner should manage finance');
+  assert(viewerPerms.canManageSettings === false, 'Viewer should not manage settings');
+  assert(viewerPerms.canManageFinance === false, 'Viewer should not manage finance');
+  assert(viewerPerms.canManageTasks === false, 'Viewer should have read-only task access');
+  assert(managerPerms.canManageProjects === true, 'Manager should manage projects');
+  assert(managerPerms.canManageSettings === false, 'Manager should not manage settings');
+  console.log('✅ Test 9 PASSED: Role-based permissions verified.\n');
+
   console.log('Restoring backup to return to pre-test state...');
   dataCleanupService.restoreBackup(backup);
   assert(storageService.getTasks().length > 0, 'Tasks restored successfully');
   console.log('✅ State successfully restored.\n');
 
-  console.log('🎉 ALL 8 AUTOMATED TESTS PASSED SUCCESSFULLY! 🚀');
+  console.log('🎉 ALL 9 AUTOMATED TESTS PASSED SUCCESSFULLY! 🚀');
 }
 
 runTestSuite().catch((err) => {
