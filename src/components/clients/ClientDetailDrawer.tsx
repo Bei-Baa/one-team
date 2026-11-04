@@ -98,8 +98,8 @@ export const ClientDetailDrawer: React.FC = () => {
         onClick={handleClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
-        <div className="w-screen sm:max-w-xl bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between pt-safe pb-safe">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 tablet:pl-10">
+        <div className="w-screen tablet:max-w-lg lg:max-w-xl bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between pt-safe pb-safe">
           {/* Header */}
           <div className="px-4 sm:px-6 py-3.5 sm:py-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-3">

@@ -44,9 +44,9 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
-      className={`relative flex flex-col bg-[#111827] text-slate-300 transition-all duration-300 ease-in-out shrink-0 border-r border-slate-800/80 select-none z-30 ${
+      className={`relative flex-col bg-[#111827] text-slate-300 transition-all duration-300 ease-in-out shrink-0 border-r border-slate-800/80 select-none z-30 ${
         sidebarCollapsed ? 'w-20' : 'w-64'
-      } hidden md:flex min-h-screen`}
+      } hidden tablet-flex min-h-screen`}
     >
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/60">

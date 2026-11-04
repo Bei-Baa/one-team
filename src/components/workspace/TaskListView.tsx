@@ -54,13 +54,14 @@ export const TaskListView: React.FC<TaskListViewProps> = ({ tasks }) => {
                     <button
                       type="button"
                       onClick={() => toggleTaskCompletion(task.id)}
-                      className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-all ${
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer ${
                         task.completed
                           ? 'bg-blue-600 border-blue-600 text-white'
                           : 'border-slate-300 dark:border-slate-600 hover:border-blue-500 bg-white dark:bg-slate-800'
                       }`}
+                      aria-label="Переключить статус выполнения"
                     >
-                      {task.completed && <Check className="w-3 h-3 stroke-[2.5]" />}
+                      {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                     </button>
                   </td>
 

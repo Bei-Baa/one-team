@@ -465,7 +465,7 @@ export const FinancePage: React.FC = () => {
       {/* SECTION C: Transactions Table with Filters & Search */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
         {/* Table Filters Toolbar */}
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1.5 text-slate-500 font-semibold px-1">
               <Filter className="w-3.5 h-3.5" />
@@ -476,7 +476,7 @@ export const FinancePage: React.FC = () => {
             <select
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e.target.value as any)}
-              className="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+              className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer min-h-[38px]"
             >
               <option value="october">Октябрь 2026</option>
               <option value="november">Ноябрь 2026</option>
@@ -487,7 +487,7 @@ export const FinancePage: React.FC = () => {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as any)}
-              className="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+              className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer min-h-[38px]"
             >
               <option value="all">Все типы операций</option>
               <option value="income">Только доходы (+)</option>
@@ -498,7 +498,7 @@ export const FinancePage: React.FC = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+              className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer min-h-[38px]"
             >
               <option value="all">Все категории</option>
               <option value="client_payment">Оплата от клиента</option>
@@ -511,7 +511,7 @@ export const FinancePage: React.FC = () => {
           </div>
 
           {/* Search input */}
-          <div className="relative w-full md:w-64">
+          <div className="relative w-full lg:w-64 shrink-0">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
