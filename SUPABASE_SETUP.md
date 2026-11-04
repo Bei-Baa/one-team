@@ -35,6 +35,20 @@ ONE TEAM переведён на облачную архитектуру с по
    - Добавит индекс для ускорения JOIN-запросов;
    - Отправит команду перезагрузки кэша схемы PostgREST (`NOTIFY pgrst, 'reload schema'`).
 
+### Миграция 003: Приглашения по email и уведомления
+Для работы безопасной системы приглашений исключительно по email:
+1. Откройте **SQL Editor** в Supabase Dashboard.
+2. Откройте файл `supabase/migrations/003_email_invitations_and_notifications.sql`.
+3. Вставьте его содержимое и нажмите **Run**.
+4. Миграция:
+   - Расширяет `workspace_invitations` статусами (`pending`, `accepted`, `declined`, `cancelled`) и именем приглашённого;
+   - Добавляет уникальный частичный индекс `(workspace_id, lower(email))` для предотвращения дубликатов ожидающих приглашений;
+   - Обновляет политики RLS для обнаружения приглашений по email получателя;
+   - Обновляет политики RLS таблицы `notifications`, позволяя приглашённым пользователям получать уведомления;
+   - Разворачивает атомарные хранимые функции `accept_workspace_invitation(invitation_id)` и `decline_workspace_invitation(invitation_id)`.
+
+Подробная инструкция по настройке Edge Function и SMTP провайдера доступна в [docs/EMAIL_INVITATION_SETUP.md](docs/EMAIL_INVITATION_SETUP.md).
+
 ---
 
 ## 3. Переменные окружения

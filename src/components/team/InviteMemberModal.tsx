@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
-import { workspaceService } from '../../services/workspaceService';
+import { workspaceService, InviteUserResult } from '../../services/workspaceService';
 import { Modal } from '../common/Modal';
 import { TeamRole } from '../../types';
-import { Send, CheckCircle2, Copy } from 'lucide-react';
+import { Send, CheckCircle2, AlertCircle, Mail, User, Shield, Info, ArrowRight } from 'lucide-react';
 
 export const InviteMemberModal: React.FC = () => {
   const { inviteModalOpen, setInviteModalOpen, saveMember } = useApp();
@@ -15,31 +15,63 @@ export const InviteMemberModal: React.FC = () => {
   const [position, setPosition] = useState('');
   const [department, setDepartment] = useState('Разработка');
   const [role, setRole] = useState<'admin' | 'editor' | 'viewer'>('editor');
+
+  const [step, setStep] = useState<'form' | 'confirm' | 'success'>('form');
   const [loading, setLoading] = useState(false);
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [inviteResult, setInviteResult] = useState<InviteUserResult | null>(null);
 
   const canInvite = currentRole === 'owner' || currentRole === 'admin';
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const validateInputs = () => {
+    if (!email.trim()) {
+      setErrorMessage('Укажите email сотрудника');
+      return false;
+    }
+    if (!workspaceService.validateEmail(email.trim())) {
+      setErrorMessage('Введите корректный адрес электронной почты');
+      return false;
+    }
+    if (!name.trim()) {
+      setErrorMessage('Укажите имя и фамилию сотрудника');
+      return false;
+    }
+    if ((role as string) === 'owner') {
+      setErrorMessage('Роль владельца (Owner) нельзя назначить через приглашение');
+      return false;
+    }
+    setErrorMessage(null);
+    return true;
+  };
+
+  const handleProceedToConfirm = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (validateInputs()) {
+      setStep('confirm');
+    }
+  };
+
+  const handleSendInvitation = async () => {
+    if (!validateInputs()) return;
     setLoading(true);
+    setErrorMessage(null);
 
     try {
+      let result: InviteUserResult | null = null;
       if (currentWorkspace?.id) {
-        // Generates token and stores token_hash in PostgreSQL workspace_invitations
-        const result = await workspaceService.inviteUser(currentWorkspace.id, email.trim(), role);
-        if (result?.token) {
-          const origin = typeof window !== 'undefined' ? window.location.origin : '';
-          setInviteLink(`${origin}/#invite=${result.token}`);
-        }
+        result = await workspaceService.inviteUser(
+          currentWorkspace.id,
+          email.trim(),
+          name.trim(),
+          role
+        );
+        setInviteResult(result);
       }
 
-      // Also persist to local/memory team member store
+      // Persist to local team member store if needed
       saveMember({
         name: name.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         position: position.trim() || 'Специалист',
         department,
         role: role as TeamRole,
@@ -49,25 +81,12 @@ export const InviteMemberModal: React.FC = () => {
         assignedProjectIds: [],
       });
 
-      if (!currentWorkspace?.id) {
-        // If not in cloud workspace, close immediately
-        setName('');
-        setEmail('');
-        setPosition('');
-        setInviteModalOpen(false);
-      }
+      setStep('success');
     } catch (err: any) {
-      alert(err.message || 'Ошибка отправки приглашения');
+      setErrorMessage(err.message || 'Ошибка отправки приглашения');
+      setStep('form');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (inviteLink && typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(inviteLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -75,87 +94,184 @@ export const InviteMemberModal: React.FC = () => {
     setName('');
     setEmail('');
     setPosition('');
-    setInviteLink(null);
+    setStep('form');
+    setErrorMessage(null);
+    setInviteResult(null);
     setInviteModalOpen(false);
+  };
+
+  const roleDescriptions: Record<string, string> = {
+    admin: 'Администратор (Admin) — управление настройками пространства и участниками',
+    editor: 'Редактор (Editor) — создание и редактирование проектов, задач и документов',
+    viewer: 'Наблюдатель (Viewer) — доступ только на чтение без права изменений',
   };
 
   return (
     <Modal
       isOpen={inviteModalOpen}
       onClose={handleClose}
-      title="Пригласить участника"
-      subtitle="Новый участник получит доступ к рабочему пространству"
+      title="Пригласить участника по email"
+      subtitle="Приглашение отправляется по email и принимается внутри личного кабинета ONE TEAM"
       maxWidth="md"
     >
       {!canInvite ? (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
-          У вас недостаточно прав для приглашения участников. Только Владелец и Администратор могут отправлять приглашения.
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span>У вас недостаточно прав. Только Владелец и Администратор могут отправлять приглашения в рабочее пространство.</span>
         </div>
-      ) : inviteLink ? (
+      ) : step === 'success' ? (
         <div className="space-y-4 py-2">
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 shrink-0" />
-            <span>Приглашение успешно создано! Токен захеширован и сохранён в базе данных.</span>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Ссылка для присоединения
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                readOnly
-                value={inviteLink}
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white outline-hidden"
-              />
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors cursor-pointer"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>{copied ? 'Скопировано!' : 'Копировать'}</span>
-              </button>
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <span className="font-semibold block text-sm">Приглашение успешно создано!</span>
+              <p className="text-emerald-400/90 leading-relaxed">
+                Пользователь <strong>{email.trim().toLowerCase()}</strong> сможет принять приглашение сразу после входа или регистрации в ONE TEAM.
+              </p>
             </div>
           </div>
+
+          {inviteResult?.emailDelivery?.error === 'EMAIL_PROVIDER_UNCONFIGURED' ? (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-start gap-2.5">
+              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="font-medium block">Email-провайдер ещё не настроен в Supabase</span>
+                <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                  Приглашение сохранено в базе данных. Как только сотрудник войдёт под адресом <strong>{email}</strong>, он увидит приглашение в разделе уведомлений. Для реальной отправки писем подключите Resend или SMTP согласно инструкции в документации.
+                </p>
+              </div>
+            </div>
+          ) : inviteResult?.emailDelivery?.sent ? (
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-center gap-2">
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>Уведомительное письмо успешно отправлено на <strong>{email}</strong>.</span>
+            </div>
+          ) : null}
+
+          <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs space-y-1.5">
+            <div className="text-slate-500 dark:text-slate-400 text-[11px]">Параметры созданного приглашения:</div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 dark:text-slate-300">Сотрудник:</span>
+              <span className="font-medium text-slate-900 dark:text-white">{name} ({email})</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 dark:text-slate-300">Роль:</span>
+              <span className="font-medium text-blue-600 dark:text-blue-400 capitalize">{role}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600 dark:text-slate-300">Пространство:</span>
+              <span className="font-medium text-slate-900 dark:text-white">{currentWorkspace?.name}</span>
+            </div>
+          </div>
+
           <div className="flex justify-end pt-2">
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-semibold rounded-xl"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors"
             >
-              Закрыть
+              Готово
+            </button>
+          </div>
+        </div>
+      ) : step === 'confirm' ? (
+        <div className="space-y-4 py-1">
+          <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex items-start gap-2.5">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Пожалуйста, проверьте введённые данные перед отправкой приглашения в рабочее пространство <strong>«{currentWorkspace?.name}»</strong>.
+            </p>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden text-xs">
+            <div className="flex justify-between p-3 bg-white dark:bg-slate-900">
+              <span className="text-slate-500 dark:text-slate-400">Email получателя:</span>
+              <span className="font-semibold text-slate-900 dark:text-white font-mono">{email.trim().toLowerCase()}</span>
+            </div>
+            <div className="flex justify-between p-3 bg-white dark:bg-slate-900">
+              <span className="text-slate-500 dark:text-slate-400">Имя и фамилия:</span>
+              <span className="font-medium text-slate-900 dark:text-white">{name.trim()}</span>
+            </div>
+            <div className="flex justify-between p-3 bg-white dark:bg-slate-900">
+              <span className="text-slate-500 dark:text-slate-400">Предлагаемая роль:</span>
+              <span className="font-semibold text-blue-600 dark:text-blue-400 uppercase">{role}</span>
+            </div>
+            {position.trim() && (
+              <div className="flex justify-between p-3 bg-white dark:bg-slate-900">
+                <span className="text-slate-500 dark:text-slate-400">Должность:</span>
+                <span className="font-medium text-slate-900 dark:text-white">{position.trim()}</span>
+              </div>
+            )}
+            <div className="flex justify-between p-3 bg-white dark:bg-slate-900">
+              <span className="text-slate-500 dark:text-slate-400">Отдел:</span>
+              <span className="font-medium text-slate-900 dark:text-white">{department}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => setStep('form')}
+              className="px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Назад
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleSendInvitation}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>{loading ? 'Отправка...' : 'Подтвердить и отправить'}</span>
             </button>
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleProceedToConfirm} className="space-y-4">
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Имя и фамилия *
+              Email приглашаемого сотрудника *
             </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Например: Алексей Смирнов"
-              className="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
-            />
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="colleague@company.com"
+                className="w-full text-sm pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Приглашение связывается строго с этим email-адресом.
+            </p>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Корпоративный email *
+              Имя и фамилия *
             </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="alexey@oneteam.io"
-              className="w-full text-sm px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
-            />
+            <div className="relative">
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Алексей Смирнов"
+                className="w-full text-sm pl-10 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -167,7 +283,7 @@ export const InviteMemberModal: React.FC = () => {
                 type="text"
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
-                placeholder="QA Инженер"
+                placeholder="Product Designer"
                 className="w-full text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
               />
             </div>
@@ -192,17 +308,22 @@ export const InviteMemberModal: React.FC = () => {
 
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-              Роль в пространстве
+              Роль в пространстве *
             </label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as any)}
-              className="w-full text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white cursor-pointer"
-            >
-              <option value="editor">Редактор (Editor) — создание и редактирование проектов, задач</option>
-              <option value="admin">Администратор (Admin) — управление настройками и командой</option>
-              <option value="viewer">Наблюдатель (Viewer) — только чтение</option>
-            </select>
+            <div className="relative">
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as any)}
+                className="w-full text-xs sm:text-sm px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white cursor-pointer"
+              >
+                <option value="editor">Редактор (Editor) — создание и редактирование проектов, задач</option>
+                <option value="admin">Администратор (Admin) — управление настройками и командой</option>
+                <option value="viewer">Наблюдатель (Viewer) — только чтение</option>
+              </select>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {roleDescriptions[role]}
+            </p>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -215,11 +336,10 @@ export const InviteMemberModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              disabled={loading}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
             >
-              <Send className="w-3.5 h-3.5" />
-              <span>{loading ? 'Создание...' : 'Отправить приглашение'}</span>
+              <span>Продолжить</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </form>
