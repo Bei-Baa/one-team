@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Eye, EyeOff, Lock, Mail, User, ArrowRight, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 
@@ -23,6 +23,21 @@ export const AuthScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Check URL hash or query params on mount for password reset or recovery link
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      if (
+        hash.includes('reset-password') ||
+        hash.includes('type=recovery') ||
+        search.includes('type=recovery')
+      ) {
+        setMode('reset');
+      }
+    }
+  }, []);
 
   // Password strength calculation
   const getPasswordStrength = (pwd: string) => {

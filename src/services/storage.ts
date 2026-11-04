@@ -142,9 +142,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newTask: Task = {
       ...task,
-      id: task.id || `task-${Date.now()}`,
+      id: task.id || generateId(),
       comments: task.comments || [],
       activities: task.activities || [
         {
@@ -278,9 +285,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newProject: Project = {
       ...project,
-      id: project.id || `proj-${Date.now()}`,
+      id: project.id || generateId(),
       createdAt: now,
     };
 
@@ -362,9 +376,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newClient: Client = {
       ...client,
-      id: client.id || `client-${Date.now()}`,
+      id: client.id || generateId(),
       notes: client.notes || [],
       interactions: client.interactions || [],
       createdAt: now,
@@ -447,9 +468,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newTx: Transaction = {
       ...tx,
-      id: tx.id || `tx-${Date.now()}`,
+      id: tx.id || generateId(),
       createdAt: now,
     };
 
@@ -504,9 +532,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newGoal: StrategicGoal = {
       ...goal,
-      id: goal.id || `goal-${Date.now()}`,
+      id: goal.id || generateId(),
       createdAt: now,
       updatedAt: now,
     };
@@ -541,9 +576,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newPriority: StrategicPriority = {
       ...priority,
-      id: priority.id || `priority-${Date.now()}`,
+      id: priority.id || generateId(),
       order: priorities.length + 1,
     };
 
@@ -577,9 +619,16 @@ class StorageService {
       }
     }
 
+    const generateId = () => {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    };
+
     const newItem: DevelopmentPlanItem = {
       ...item,
-      id: item.id || `plan-${Date.now()}`,
+      id: item.id || generateId(),
       order: plan.length + 1,
     };
 
