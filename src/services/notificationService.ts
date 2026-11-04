@@ -179,6 +179,46 @@ class NotificationService {
   }
 
   // Team Events
+  notifyInvitationSent(workspaceName: string, inviteeEmail: string, role: string) {
+    this.dispatch({
+      title: 'Приглашение отправлено',
+      description: `Приглашение для ${inviteeEmail} (роль: ${role}) создано для «${workspaceName}».`,
+      type: 'team',
+      targetPage: 'team',
+      fingerprint: `invite_sent_${workspaceName}_${inviteeEmail}_${Math.floor(Date.now() / 60000)}`,
+    });
+  }
+
+  notifyInvitationReceived(workspaceName: string, inviterName: string, role: string) {
+    this.dispatch({
+      title: 'Новое приглашение в команду',
+      description: `${inviterName} пригласил(а) вас в «${workspaceName}» на роль ${role}. Откройте центр уведомлений для подтверждения.`,
+      type: 'team',
+      targetPage: 'team',
+      fingerprint: `invite_received_${workspaceName}_${Date.now()}`,
+    });
+  }
+
+  notifyInvitationAccepted(workspaceName: string, userName: string) {
+    this.dispatch({
+      title: 'Приглашение принято',
+      description: `${userName} присоединился(-лась) к команде «${workspaceName}».`,
+      type: 'team',
+      targetPage: 'team',
+      fingerprint: `invite_accepted_${workspaceName}_${userName}_${Date.now()}`,
+    });
+  }
+
+  notifyInvitationDeclined(workspaceName: string, userName: string) {
+    this.dispatch({
+      title: 'Приглашение отклонено',
+      description: `${userName} отклонил(а) приглашение в команду «${workspaceName}».`,
+      type: 'team',
+      targetPage: 'team',
+      fingerprint: `invite_declined_${workspaceName}_${userName}_${Date.now()}`,
+    });
+  }
+
   notifyTeamMemberJoined(memberName: string, position: string, memberId: string) {
     this.dispatch({
       title: 'Новый участник в команде',

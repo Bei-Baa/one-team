@@ -233,10 +233,109 @@ export class CloudDataService {
           revisions: visionRes.data.revisions || [],
         } : null,
         members,
+        notifications: (notificationsRes.data || []).map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          description: n.description,
+          type: n.type,
+          timestamp: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: Boolean(n.is_read),
+          targetPage: n.target_page,
+          entityId: n.entity_id,
+          recipientId: n.recipient_id,
+          fingerprint: n.fingerprint,
+        })),
       };
     } catch (err) {
       console.warn('Error reading workspace tables from Supabase:', err);
       return null;
+    }
+  }
+
+  /**
+   * Fetch current authenticated user's direct notifications from Supabase
+   */
+  async loadUserNotifications(): Promise<NotificationItem[]> {
+    if (!isSupabaseConfigured && !getIsSupabaseConfigured?.()) return [];
+    try {
+      const { data: userResp } = await supabase.auth.getUser();
+      if (!userResp.user) return [];
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('recipient_id', userResp.user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error || !data) return [];
+
+      return data.map((n: any) => ({
+        id: n.id,
+        title: n.title,
+        description: n.description,
+        type: n.type,
+        timestamp: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        read: Boolean(n.is_read),
+        targetPage: n.target_page,
+        entityId: n.entity_id,
+        recipientId: n.recipient_id,
+        fingerprint: n.fingerprint,
+      }));
+    } catch (e) {
+      console.warn('Failed to fetch user notifications:', e);
+      return [];
+    }
+  }
+
+  /**
+   * Mark notification as read in Supabase
+   */
+  async markNotificationRead(id: string) {
+    if (!isSupabaseConfigured && !getIsSupabaseConfigured?.()) return;
+    try {
+      if (this.isValidUUID(id)) {
+        await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Failed to mark notification read:', e);
+    }
+  }
+
+  /**
+   * Mark all notifications read for current user
+   */
+  async markAllNotificationsRead() {
+    if (!isSupabaseConfigured && !getIsSupabaseConfigured?.()) return;
+    try {
+      const { data: userResp } = await supabase.auth.getUser();
+      if (!userResp.user) return;
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('recipient_id', userResp.user.id);
+    } catch (e) {
+      console.warn('Failed to mark all notifications read:', e);
+    }
+  }
+
+  /**
+   * Delete notification from Supabase
+   */
+  async deleteNotification(id: string) {
+    if (!isSupabaseConfigured && !getIsSupabaseConfigured?.()) return;
+    try {
+      if (this.isValidUUID(id)) {
+        await supabase
+          .from('notifications')
+          .delete()
+          .eq('id', id);
+      }
+    } catch (e) {
+      console.warn('Failed to delete notification:', e);
     }
   }
 
