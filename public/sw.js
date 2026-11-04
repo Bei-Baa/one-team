@@ -1,16 +1,22 @@
 // ONE TEAM — Service Worker with Secure Caching
-// CACHE VERSION
-const CACHE_NAME = 'oneteam-shell-v1';
+// CACHE VERSION (Bumped to v2 for brand identity & icons update)
+const CACHE_NAME = 'oneteam-shell-v2';
 
-// Static assets whitelist (public shell only)
+// Static assets whitelist (public shell only - no user or API data)
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
+  '/favicon.ico',
+  '/favicon.svg',
+  '/apple-touch-icon.png',
   '/icons/icon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-512-maskable.png',
+  '/icons/maskable-192.png',
+  '/icons/maskable-512.png',
+  '/icons/apple-touch-icon.png',
 ];
 
 // Strictly forbidden patterns (never cache private or dynamic data)
@@ -56,7 +62,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 2. Activate event: Clean up old caches
+// 2. Activate event: Clean up old shell caches (preserves IndexedDB / user storage completely)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
