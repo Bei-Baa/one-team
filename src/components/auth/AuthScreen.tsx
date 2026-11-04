@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Eye, EyeOff, Lock, Mail, User, ArrowRight, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, Clock } from 'lucide-react';
 
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 
@@ -21,8 +21,12 @@ export const AuthScreen: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Synchronous submission lock to prevent duplicate clicks / Enter submits
+  const isSubmittingRef = useRef(false);
 
   // Check URL hash or query params on mount for password reset or recovery link
   useEffect(() => {
@@ -38,6 +42,18 @@ export const AuthScreen: React.FC = () => {
       }
     }
   }, []);
+
+  // Cooldown countdown timer on HTTP 429 rate limit
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownSeconds]);
 
   // Password strength calculation
   const getPasswordStrength = (pwd: string) => {
@@ -55,6 +71,13 @@ export const AuthScreen: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guard: Prevent double-click or submission during loading or active rate-limit cooldown
+    if (loading || isSubmittingRef.current || cooldownSeconds > 0) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
     setErrorMsg(null);
     setSuccessMsg(null);
     setLoading(true);
@@ -69,8 +92,13 @@ export const AuthScreen: React.FC = () => {
         if (password !== confirmPassword) {
           throw new Error('Пароли не совпадают');
         }
-        await signUp(email.trim(), password, fullName.trim());
-        setSuccessMsg('Проверьте почту для подтверждения регистрации.');
+        const res = await signUp(email.trim(), password, fullName.trim());
+        if (res?.user && !res?.session) {
+          // Explicit confirmation pending state
+          setSuccessMsg('Регистрация прошла успешно! На вашу почту отправлено письмо с подтверждением.');
+        } else {
+          setSuccessMsg('Регистрация прошла успешно!');
+        }
       } else if (mode === 'forgot') {
         await resetPassword(email.trim());
         setSuccessMsg('Инструкции по сбросу пароля отправлены на ваш email.');
@@ -86,9 +114,22 @@ export const AuthScreen: React.FC = () => {
         setTimeout(() => setMode('login'), 2000);
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Произошла ошибка при выполнении операции.');
+      const msg = err.message || 'Произошла ошибка при выполнении операции.';
+      setErrorMsg(msg);
+
+      // Check if error is 429 rate limit
+      const isRateLimit =
+        err.status === 429 ||
+        err.code === 'over_email_send_rate_limit' ||
+        (typeof msg === 'string' && (msg.includes('лимит') || msg.toLowerCase().includes('rate limit')));
+
+      if (isRateLimit) {
+        // Enforce a 60s cooldown to prevent repeated requests triggering further backend penalties
+        setCooldownSeconds(60);
+      }
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -225,10 +266,11 @@ export const AuthScreen: React.FC = () => {
                       <input
                         type="text"
                         required
+                        disabled={loading || cooldownSeconds > 0}
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Алексей Смирнов"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -244,10 +286,11 @@ export const AuthScreen: React.FC = () => {
                       <input
                         type="email"
                         required
+                        disabled={loading || cooldownSeconds > 0}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="alexey@company.com"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -262,12 +305,13 @@ export const AuthScreen: React.FC = () => {
                       {mode === 'login' && (
                         <button
                           type="button"
+                          disabled={loading}
                           onClick={() => {
                             setMode('forgot');
                             setErrorMsg(null);
                             setSuccessMsg(null);
                           }}
-                          className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+                          className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
                         >
                           Забыли пароль?
                         </button>
@@ -278,10 +322,11 @@ export const AuthScreen: React.FC = () => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
+                        disabled={loading || cooldownSeconds > 0}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors"
+                        className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <button
                         type="button"
@@ -324,10 +369,11 @@ export const AuthScreen: React.FC = () => {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         required
+                        disabled={loading || cooldownSeconds > 0}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 focus:border-blue-500 text-sm text-white placeholder-slate-500 outline-hidden transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
                   </div>
@@ -336,11 +382,19 @@ export const AuthScreen: React.FC = () => {
                 {/* Submit CTA */}
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer disabled:opacity-60"
+                  disabled={loading || cooldownSeconds > 0}
+                  className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {loading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Выполняется запрос...</span>
+                    </>
+                  ) : cooldownSeconds > 0 ? (
+                    <>
+                      <Clock className="w-4 h-4 animate-pulse" />
+                      <span>Повтор через {cooldownSeconds} сек.</span>
+                    </>
                   ) : (
                     <>
                       <span>

@@ -19,6 +19,45 @@ export interface AuthState {
   needsEmailVerification: boolean;
 }
 
+/**
+ * Translates and normalizes Supabase Auth errors into user-friendly messages.
+ */
+export function formatAuthError(err: any): string {
+  if (!err) return 'Неизвестная ошибка авторизации.';
+
+  const message = (err.message || '').toLowerCase();
+  const code = (err.code || err.error_code || '').toLowerCase();
+  const status = err.status || err.statusCode;
+
+  // HTTP 429 Rate limit detection
+  if (status === 429 || code.includes('rate_limit') || message.includes('rate limit')) {
+    return 'Превышен лимит отправки писем. Пожалуйста, подождите несколько минут перед повторной попыткой.';
+  }
+
+  // Common authentication errors
+  if (code === 'invalid_credentials' || message.includes('invalid login credentials')) {
+    return 'Неверный email или пароль.';
+  }
+
+  if (code === 'user_already_exists' || message.includes('already registered') || message.includes('user already exists')) {
+    return 'Пользователь с таким email уже зарегистрирован. Пожалуйста, войдите.';
+  }
+
+  if (message.includes('password should be at least') || message.includes('weak password')) {
+    return 'Пароль слишком простой. Используйте минимум 6 символов, включая буквы и цифры.';
+  }
+
+  if (message.includes('valid email') || message.includes('invalid email')) {
+    return 'Пожалуйста, введите корректный адрес электронной почты.';
+  }
+
+  if (message.includes('network') || message.includes('fetch')) {
+    return 'Ошибка подключения к серверу. Проверьте интернет-соединение.';
+  }
+
+  return err.message || 'Произошла ошибка при выполнении операции.';
+}
+
 export class AuthService {
   /**
    * Register with email and password
@@ -28,6 +67,7 @@ export class AuthService {
       throw new Error('Supabase is not configured. Please check your environment variables.');
     }
 
+    // Direct single request without automatic retry
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -39,7 +79,13 @@ export class AuthService {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      const enhancedError: any = new Error(formatAuthError(error));
+      enhancedError.status = error.status;
+      enhancedError.code = error.code;
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
     return data;
   }
 
@@ -56,7 +102,13 @@ export class AuthService {
       password,
     });
 
-    if (error) throw error;
+    if (error) {
+      const enhancedError: any = new Error(formatAuthError(error));
+      enhancedError.status = error.status;
+      enhancedError.code = error.code;
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
     return data;
   }
 
@@ -81,7 +133,13 @@ export class AuthService {
       redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/#reset-password` : undefined,
     });
 
-    if (error) throw error;
+    if (error) {
+      const enhancedError: any = new Error(formatAuthError(error));
+      enhancedError.status = error.status;
+      enhancedError.code = error.code;
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
     return data;
   }
 
@@ -97,7 +155,13 @@ export class AuthService {
       password: newPassword,
     });
 
-    if (error) throw error;
+    if (error) {
+      const enhancedError: any = new Error(formatAuthError(error));
+      enhancedError.status = error.status;
+      enhancedError.code = error.code;
+      enhancedError.originalError = error;
+      throw enhancedError;
+    }
     return data;
   }
 
