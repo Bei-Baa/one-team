@@ -134,15 +134,15 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#080C14] text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden select-none">
+    <div className="min-h-screen w-full bg-[#080C14] text-slate-100 flex items-center justify-center p-3 sm:p-6 lg:p-8 relative overflow-hidden select-none pt-safe pb-safe">
       {/* Background ambient lighting */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-600/15 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-cyan-500/10 blur-[140px] pointer-events-none" />
+      <div className="absolute top-[-20%] left-[-10%] w-72 sm:w-[500px] h-72 sm:h-[500px] rounded-full bg-blue-600/15 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-72 sm:w-[600px] h-72 sm:h-[600px] rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none" />
 
       {/* Main Container */}
-      <div className="w-full max-w-5xl bg-[#0D1526]/80 border border-slate-800/80 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px] z-10 transition-all">
+      <div className="w-full max-w-5xl bg-[#0D1526]/80 border border-slate-800/80 rounded-2xl sm:rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[560px] sm:min-h-[640px] z-10 transition-all">
         {/* Left Side: Brand & Visuals */}
-        <div className="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/60 bg-gradient-to-br from-[#101B33]/60 via-[#0D1526]/40 to-[#080C14]/90 relative">
+        <div className="lg:col-span-5 p-6 sm:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800/60 bg-gradient-to-br from-[#101B33]/60 via-[#0D1526]/40 to-[#080C14]/90 relative">
           <div>
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export const AuthScreen: React.FC = () => {
         </div>
 
         {/* Right Side: Auth Form */}
-        <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center">
+        <div className="lg:col-span-7 p-5 sm:p-12 flex flex-col justify-center">
           {needsEmailVerification ? (
             <div className="max-w-md mx-auto text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center mx-auto border border-blue-500/20">

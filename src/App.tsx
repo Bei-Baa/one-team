@@ -22,6 +22,7 @@ import { MissionModal } from './components/strategy/MissionModal';
 import { VisionModal } from './components/strategy/VisionModal';
 import { AuthScreen } from './components/auth/AuthScreen';
 import { WorkspaceSetupModal } from './components/workspace/WorkspaceSetupModal';
+import { WorkspaceSwitcher } from './components/workspace/WorkspaceSwitcher';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import {
   LayoutDashboard,
@@ -73,27 +74,38 @@ const MainLayout: React.FC = () => {
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileDrawerOpen(false)}
           />
-          <div className="relative w-72 bg-[#111827] text-white flex flex-col justify-between p-4 z-10 shadow-2xl">
+          <div className="relative w-80 max-w-[85vw] bg-[#111827] text-white flex flex-col justify-between p-4 z-10 shadow-2xl overflow-y-auto pt-safe pb-safe">
             <div>
               {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-700 to-cyan-400 flex items-center justify-center">
                     <span className="text-white font-extrabold text-sm">A</span>
                   </div>
-                  <span className="font-bold text-base tracking-wider text-white">
-                    ONE TEAM
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-sm tracking-wider text-white">
+                      ONE TEAM
+                    </span>
+                    <span className="text-[10px] text-slate-400 uppercase font-medium">
+                      Mobile Workspace
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setMobileDrawerOpen(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  aria-label="Закрыть меню"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Navigation Items (8 sections) */}
+              {/* Mobile Workspace Switcher */}
+              <div className="py-3 border-b border-slate-800/80">
+                <WorkspaceSwitcher collapsed={false} />
+              </div>
+
+              {/* Navigation Items (9 sections) */}
               <nav className="space-y-1 mt-3">
                 {navItems.map((item) => {
                   const Icon = item.icon;
@@ -105,14 +117,14 @@ const MainLayout: React.FC = () => {
                         setActivePage(item.id);
                         setMobileDrawerOpen(false);
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors touch-target ${
                         isActive
-                          ? 'bg-blue-600 text-white shadow-md'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30'
                           : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span>{item.label}</span>
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="truncate">{item.label}</span>
                     </button>
                   );
                 })}
@@ -125,7 +137,7 @@ const MainLayout: React.FC = () => {
                 setActivePage('settings');
                 setMobileDrawerOpen(false);
               }}
-              className="p-3 bg-slate-800/60 rounded-xl flex items-center gap-3 cursor-pointer mt-4"
+              className="p-3 bg-slate-800/60 hover:bg-slate-800 rounded-xl flex items-center gap-3 cursor-pointer mt-4 border border-slate-700/40"
             >
               <Avatar
                 src={settings.currentUser.avatar}
@@ -134,7 +146,7 @@ const MainLayout: React.FC = () => {
                 showOnlineStatus
                 isOnline={true}
               />
-              <div className="truncate">
+              <div className="truncate flex-1">
                 <div className="text-xs font-semibold text-white truncate">
                   {settings.currentUser.name}
                 </div>
@@ -153,7 +165,7 @@ const MainLayout: React.FC = () => {
         <Header onMobileMenuToggle={() => setMobileDrawerOpen(true)} />
 
         {/* Dynamic Page Content Viewport for 9 Pages */}
-        <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7 pb-20 md:pb-7">
           {activePage === 'dashboard' && <DashboardPage />}
           {activePage === 'workspace' && <WorkspacePage />}
           {activePage === 'projects' && <ProjectsPage />}
@@ -166,7 +178,7 @@ const MainLayout: React.FC = () => {
         </main>
 
         {/* Mobile bottom nav */}
-        <MobileNav />
+        <MobileNav onOpenMenu={() => setMobileDrawerOpen(true)} />
       </div>
 
       {/* Global Quick Create Modal */}

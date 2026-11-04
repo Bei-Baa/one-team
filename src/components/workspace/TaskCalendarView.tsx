@@ -124,13 +124,13 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks }) => 
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {calendarCells.map((day, idx) => {
           if (day === null) {
             return (
               <div
                 key={`empty-${idx}`}
-                className="min-h-[100px] rounded-xl bg-slate-50/50 dark:bg-slate-800/20 border border-transparent"
+                className="min-h-[60px] sm:min-h-[100px] rounded-lg sm:rounded-xl bg-slate-50/50 dark:bg-slate-800/20 border border-transparent"
               />
             );
           }
@@ -141,7 +141,7 @@ export const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks }) => 
           return (
             <div
               key={`day-${day}`}
-              className={`min-h-[110px] p-2 rounded-xl border flex flex-col justify-between transition-colors ${
+              className={`min-h-[65px] sm:min-h-[110px] p-1 sm:p-2 rounded-lg sm:rounded-xl border flex flex-col justify-between transition-colors ${
                 isToday
                   ? 'border-blue-500/80 bg-blue-50/30 dark:bg-blue-950/20 shadow-xs'
                   : 'border-slate-200/60 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'

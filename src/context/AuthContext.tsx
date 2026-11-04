@@ -185,6 +185,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('oneteam_active_ws_id');
     }
+    // Evict Service Worker caches on sign-out to guarantee zero cross-session data leaks
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'LOGOUT_PURGE' });
+    }
   };
 
   const resetPassword = async (email: string) => {

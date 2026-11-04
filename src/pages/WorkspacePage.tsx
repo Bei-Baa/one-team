@@ -94,12 +94,12 @@ export const WorkspacePage: React.FC = () => {
         </div>
 
         {/* View Mode Switcher + Create Action */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Segmented View Mode Controls */}
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
                 viewMode === 'kanban'
                   ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -111,7 +111,7 @@ export const WorkspacePage: React.FC = () => {
 
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -123,7 +123,7 @@ export const WorkspacePage: React.FC = () => {
 
             <button
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
                 viewMode === 'calendar'
                   ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -137,7 +137,7 @@ export const WorkspacePage: React.FC = () => {
           {/* "+ Новая задача" button */}
           <button
             onClick={() => openCreateTask()}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs shadow-blue-600/30 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs shadow-blue-600/30 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             <span>Новая задача</span>
@@ -146,17 +146,17 @@ export const WorkspacePage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-2.5 p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs text-xs">
-        <div className="flex items-center gap-1.5 text-slate-500 font-semibold px-2">
+      <div className="flex flex-wrap items-center gap-2 p-2.5 sm:p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs text-xs">
+        <div className="flex items-center gap-1.5 text-slate-500 font-semibold px-1">
           <SlidersHorizontal className="w-3.5 h-3.5" />
-          <span>Фильтры:</span>
+          <span className="hidden xs:inline">Фильтры:</span>
         </div>
 
         {/* Project Selector */}
         <select
           value={selectedProjectFilter}
           onChange={(e) => setSelectedProjectFilter(e.target.value)}
-          className="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+          className="flex-1 sm:flex-none py-1.5 px-2.5 sm:px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer text-xs"
         >
           <option value="all">Все проекты ({projects.length})</option>
           {projects.map((p) => (
@@ -170,7 +170,7 @@ export const WorkspacePage: React.FC = () => {
         <select
           value={selectedPriorityFilter}
           onChange={(e) => setSelectedPriorityFilter(e.target.value)}
-          className="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+          className="flex-1 sm:flex-none py-1.5 px-2.5 sm:px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer text-xs"
         >
           <option value="all">Любой приоритет</option>
           <option value="high">Высокий</option>
@@ -182,7 +182,7 @@ export const WorkspacePage: React.FC = () => {
         <select
           value={selectedAssigneeFilter}
           onChange={(e) => setSelectedAssigneeFilter(e.target.value)}
-          className="py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer"
+          className="flex-1 sm:flex-none py-1.5 px-2.5 sm:px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:outline-hidden cursor-pointer text-xs"
         >
           <option value="all">Все исполнители</option>
           {members.map((m) => (
