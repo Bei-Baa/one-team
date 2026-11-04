@@ -147,6 +147,7 @@ interface AppContextType {
   notifications: NotificationItem[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  deleteNotification: (id: string) => void;
   notificationsOpen: boolean;
   setNotificationsOpen: (open: boolean) => void;
 
@@ -668,6 +669,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setNotifications(storageService.getNotifications());
   };
 
+  const deleteNotification = (id: string) => {
+    storageService.deleteNotification(id);
+    setNotifications(storageService.getNotifications());
+  };
+
   const getProjectById = (id: string) => enrichedProjects.find((p) => p.id === id);
   const getMemberById = (id: string) => members.find((m) => m.id === id);
   const getClientById = (id: string) => enrichedClients.find((c) => c.id === id);
@@ -774,6 +780,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         notifications,
         markNotificationRead,
         markAllNotificationsRead,
+        deleteNotification,
         notificationsOpen,
         setNotificationsOpen,
         quickCreateOpen,
