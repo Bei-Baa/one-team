@@ -154,11 +154,30 @@ export const TeamPage: React.FC = () => {
       </div>
 
       {/* Team Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-5">
-        {filteredMembers.map((member) => (
-          <TeamMemberCard key={member.id} member={member} />
-        ))}
-      </div>
+      {filteredMembers.length === 0 ? (
+        <div className="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-8 shadow-xs">
+          <Users className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+            Сотрудники не найдены
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            Пригласите коллег для совместной работы над проектами и задачами.
+          </p>
+          <button
+            onClick={() => setInviteModalOpen(true)}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Пригласить первого сотрудника</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-5">
+          {filteredMembers.map((member) => (
+            <TeamMemberCard key={member.id} member={member} />
+          ))}
+        </div>
+      )}
 
       {/* Modals */}
       <MemberDetailModal />

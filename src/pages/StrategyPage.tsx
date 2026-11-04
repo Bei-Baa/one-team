@@ -219,9 +219,15 @@ export const StrategyPage: React.FC = () => {
                   </button>
                 </div>
 
-                <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium mb-3">
-                  «{mission.statement}»
-                </p>
+                {mission.statement ? (
+                  <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium mb-3">
+                    «{mission.statement}»
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 italic mb-3">
+                    Миссия команды пока не сформулирована. Нажмите кнопку редактирования, чтобы определить миссию.
+                  </p>
+                )}
 
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
                   <div className="flex items-center justify-between text-[11px] text-slate-400">
@@ -264,9 +270,15 @@ export const StrategyPage: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium mb-3">
-                  «{vision.statement}»
-                </p>
+                {vision.statement ? (
+                  <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium mb-3">
+                    «{vision.statement}»
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 italic mb-3">
+                    Видение компании не определено. Нажмите кнопку редактирования, чтобы сформулировать долгосрочный вектор.
+                  </p>
+                )}
 
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5">
                   <span className="text-[10px] text-slate-400 uppercase font-semibold">
@@ -728,12 +740,30 @@ export const StrategyPage: React.FC = () => {
           </div>
 
           {/* Goals Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredGoals.map((goal: StrategicGoal) => (
-              <div
-                key={goal.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-150"
+          {filteredGoals.length === 0 ? (
+            <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-xs">
+              <Target className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                Цели не найдены
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Определите стратегические цели для команды и привяжите к ним проекты.
+              </p>
+              <button
+                onClick={openCreateGoal}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
               >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Создать первую цель</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredGoals.map((goal: StrategicGoal) => (
+                <div
+                  key={goal.id}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between hover:border-blue-300 dark:hover:border-blue-800 transition-all duration-150"
+                >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300">
@@ -821,7 +851,8 @@ export const StrategyPage: React.FC = () => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -847,12 +878,30 @@ export const StrategyPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {priorities.map((priority: StrategicPriority) => (
-              <div
-                key={priority.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between hover:border-blue-300 transition-all"
+          {priorities.length === 0 ? (
+            <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-xs">
+              <Sparkles className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                Приоритеты не созданы
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Добавьте ключевые приоритеты для концентрации усилий команды.
+              </p>
+              <button
+                onClick={openCreatePriority}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
               >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Создать первый приоритет</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {priorities.map((priority: StrategicPriority) => (
+                <div
+                  key={priority.id}
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between hover:border-blue-300 transition-all"
+                >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span
@@ -922,7 +971,8 @@ export const StrategyPage: React.FC = () => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -974,7 +1024,24 @@ export const StrategyPage: React.FC = () => {
             </div>
           </div>
 
-          {planViewMode === 'timeline' ? (
+          {developmentPlan.length === 0 ? (
+            <div className="py-16 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-xs">
+              <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                План развития пуст
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Добавьте вехи и инициативы дорожной карты для поэтапного достижения стратегических целей.
+              </p>
+              <button
+                onClick={openCreatePlanItem}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Создать первую веху</span>
+              </button>
+            </div>
+          ) : planViewMode === 'timeline' ? (
             /* Timeline View */
             <div className="relative pl-6 sm:pl-8 space-y-6 before:content-[''] before:absolute before:top-3 before:bottom-3 before:left-3 sm:before:left-4 before:w-0.5 before:bg-blue-200 dark:before:bg-blue-900/60">
               {developmentPlan.map((item: DevelopmentPlanItem, idx: number) => (

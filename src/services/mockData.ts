@@ -13,54 +13,20 @@ import {
   DevelopmentPlanItem,
 } from '../types';
 
+// Default initial team member is strictly the active workspace owner profile.
+// Fictional employees (Anton, Maria, Dmitry) have been removed for clean production state.
 export const INITIAL_MEMBERS: TeamMember[] = [
   {
     id: 'user-1',
     name: 'Екатерина Соколова',
-    position: 'CEO & Стратегия',
+    position: 'Владелец пространства',
     role: 'owner',
     email: 'ekaterina@oneteam.io',
     avatar: '/src/assets/images/avatar_ekaterina_1793774892743.jpg',
     isOnline: true,
-    workload: 78,
-    assignedProjectIds: ['proj-1', 'proj-4', 'proj-6'],
+    workload: 0,
+    assignedProjectIds: [],
     department: 'Руководство',
-  },
-  {
-    id: 'user-2',
-    name: 'Антон Васильев',
-    position: 'Руководитель проектов & Продажи',
-    role: 'manager',
-    email: 'anton@oneteam.io',
-    avatar: '/src/assets/images/avatar_anton_1793774893419.jpg',
-    isOnline: true,
-    workload: 85,
-    assignedProjectIds: ['proj-2', 'proj-5', 'proj-3'],
-    department: 'Менеджмент',
-  },
-  {
-    id: 'user-3',
-    name: 'Мария Лебедева',
-    position: 'Маркетинг & Дизайн-лид',
-    role: 'admin',
-    email: 'maria@oneteam.io',
-    avatar: '/src/assets/images/avatar_maria_1793774893832.jpg',
-    isOnline: true,
-    workload: 65,
-    assignedProjectIds: ['proj-1', 'proj-2', 'proj-5'],
-    department: 'Дизайн & Маркетинг',
-  },
-  {
-    id: 'user-4',
-    name: 'Дмитрий Кузнецов',
-    position: 'Senior Frontend Инженер',
-    role: 'member',
-    email: 'dmitry@oneteam.io',
-    avatar: '/src/assets/images/avatar_dmitry_1793774893675.jpg',
-    isOnline: false,
-    workload: 72,
-    assignedProjectIds: ['proj-1', 'proj-3', 'proj-5'],
-    department: 'Разработка',
   },
 ];
 
@@ -697,66 +663,27 @@ export const INITIAL_SETTINGS: WorkspaceSettings = {
 // STRATEGY MODULE INITIAL DATA
 export const INITIAL_MISSION: TeamMission = {
   id: 'mission-1',
-  statement:
-    'Создавать передовые цифровые продукты и решения автоматизации, освобождающие потенциал команд и ускоряющие развитие бизнеса наших клиентов.',
-  purpose:
-    'Объединять людей, идеи и технологии в единую эффективную рабочую среду без бюрократии, хаоса и потери фокуса.',
-  customerValue:
-    'Повышение операционной прозрачности на 40%, сокращение времени вывода продуктов на рынок (Time-to-Market) и гарантированное соблюдение сроков.',
-  principles: [
-    'Ответственность за результат, а не за потраченные часы',
-    'Клиентоориентированность, эмпатия и партнёрское мышление',
-    'Непрерывное инженерное совершенство и внимание к деталям',
-    'Прозрачность, открытость и взаимное доверие в команде',
-  ],
+  statement: '',
+  purpose: '',
+  customerValue: '',
+  principles: [],
   ownerId: 'user-1',
   ownerName: 'Екатерина Соколова',
-  updatedAt: '2026-10-20',
-  revisions: [
-    {
-      id: 'rev-m1',
-      field: 'mission',
-      content: 'Оригинальная формулировка миссии ONE TEAM от основания компании.',
-      timestamp: '2026-09-01 10:00',
-      authorName: 'Екатерина Соколова',
-    },
-    {
-      id: 'rev-m2',
-      field: 'mission',
-      content: 'Добавлены принципы непрерывного инженерного совершенства.',
-      timestamp: '2026-10-20 16:45',
-      authorName: 'Екатерина Соколова',
-    },
-  ],
+  updatedAt: new Date().toISOString().split('T')[0],
+  revisions: [],
 };
 
 export const INITIAL_VISION: TeamVision = {
   id: 'vision-1',
-  statement:
-    'Стать ведущей продуктовой экосистемой управления проектами и бизнес-процессами для технологических команд в Центральной Азии к 2029 году.',
-  desiredState:
-    'Платформа ONE TEAM объединяет свыше 500 быстрорастущих компаний, уровень удержания клиентов превышает 95%, а команда входит в топ-10 технологических работодателей региона.',
-  direction:
-    'Фокус на умной автоматизации, кросс-платформенной синхронизации (Web, iOS, Desktop) и масштабировании партнёрской дистрибуции.',
+  statement: '',
+  desiredState: '',
+  direction: '',
   targetHorizon: '3_years',
-  expectedOutcomes: [
-    'Выход на рынки Казахстана, Узбекистана и ОАЭ с локализованными предложениями',
-    'Запуск нативных мобильных приложений ONE TEAM на базе единого синхронизируемого ядра',
-    'Достижение годовой регулярной выручки (ARR) свыше $3 000 000 к концу 2028 года',
-    'Формирование открытого API и маркетплейса корпоративных расширений',
-  ],
+  expectedOutcomes: [],
   ownerId: 'user-1',
   ownerName: 'Екатерина Соколова',
-  updatedAt: '2026-10-22',
-  revisions: [
-    {
-      id: 'rev-v1',
-      field: 'vision',
-      content: 'Первая редакция стратегического видения на горизонт 3 лет.',
-      timestamp: '2026-09-10 12:00',
-      authorName: 'Екатерина Соколова',
-    },
-  ],
+  updatedAt: new Date().toISOString().split('T')[0],
+  revisions: [],
 };
 
 export const INITIAL_STRATEGIC_GOALS: StrategicGoal[] = [

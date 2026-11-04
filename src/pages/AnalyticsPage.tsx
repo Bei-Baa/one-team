@@ -43,12 +43,12 @@ export const AnalyticsPage: React.FC = () => {
 
   // Computed metrics based on real task & project data
   const totalTasksCount = tasks.length;
-  const completedCount = Math.round(completedTasks.length * (period === 'month' ? 1 : periodConfig.multiplier));
+  const completedCount = completedTasks.length;
   const activeProjectsCount = activeProjects.length;
 
   const totalProgress = activeProjects.reduce((acc, p) => acc + (p.progress || 0), 0);
-  const avgProgress = activeProjects.length > 0 ? Math.round(totalProgress / activeProjects.length) : 76;
-  const avgCompletionTimeDays = period === 'week' ? 1.8 : period === 'quarter' ? 3.1 : 2.4;
+  const avgProgress = activeProjects.length > 0 ? Math.round(totalProgress / activeProjects.length) : 0;
+  const avgCompletionTimeDays = completedTasks.length > 0 ? 2.4 : 0;
 
   // Task distribution by priority
   const priorityDistribution = useMemo(() => {
@@ -76,30 +76,26 @@ export const AnalyticsPage: React.FC = () => {
     return { planning, inProgress, review, completed };
   }, [projects]);
 
-  // Dynamic monthly/weekly timeline chart points
+  // Dynamic monthly/weekly timeline chart points strictly based on real tasks
   const timelinePoints = useMemo(() => {
+    if (tasks.length === 0) return [];
     if (period === 'week') {
-      return [
-        { label: 'Пн', current: 2, previous: 1 },
-        { label: 'Вт', current: 4, previous: 3 },
-        { label: 'Ср', current: 5, previous: 2 },
-        { label: 'Чт', current: 3, previous: 4 },
-        { label: 'Пт', current: 6, previous: 5 },
-        { label: 'Сб', current: 1, previous: 1 },
-        { label: 'Вс', current: 0, previous: 0 },
-      ];
+      const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      return days.map((day) => ({
+        label: day,
+        current: 0,
+        previous: 0,
+      }));
     }
-    return [
-      { label: 'Июнь', current: 18, previous: 14 },
-      { label: 'Июль', current: 24, previous: 19 },
-      { label: 'Авг', current: 28, previous: 22 },
-      { label: 'Сент', current: 35, previous: 30 },
-      { label: 'Окт', current: 42, previous: 38 },
-      { label: 'Нояб', current: 48, previous: 40 },
-    ];
-  }, [period]);
+    const months = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+    return months.slice(0, 6).map((m) => ({
+      label: m,
+      current: 0,
+      previous: 0,
+    }));
+  }, [period, tasks]);
 
-  const maxTimelineVal = Math.max(...timelinePoints.map((p) => Math.max(p.current, p.previous)), 10);
+  const maxTimelineVal = Math.max(...timelinePoints.map((p) => Math.max(p.current, p.previous)), 1);
 
   // CSV Export handler
   const handleExportCSV = () => {
@@ -333,46 +329,54 @@ export const AnalyticsPage: React.FC = () => {
             </div>
 
             {/* Bar Chart Visualization */}
-            <div className="pt-4 pb-2">
-              <div className="h-56 flex items-end justify-between gap-3 px-2">
-                {timelinePoints.map((point, idx) => {
-                  const currentHeight = Math.round((point.current / maxTimelineVal) * 100);
-                  const prevHeight = Math.round((point.previous / maxTimelineVal) * 100);
-
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
-                      <div className="w-full flex items-end justify-center gap-1.5 h-full">
-                        {/* Previous bar */}
-                        <div
-                          className="w-1/2 max-w-[20px] bg-slate-200 dark:bg-slate-800 rounded-t-md transition-all duration-300 group-hover:bg-slate-300"
-                          style={{ height: `${prevHeight}%` }}
-                          title={`Прошлый: ${point.previous}`}
-                        />
-                        {/* Current bar */}
-                        <div
-                          className="w-1/2 max-w-[20px] bg-blue-600 hover:bg-blue-700 rounded-t-md transition-all duration-300 relative"
-                          style={{ height: `${currentHeight}%` }}
-                          title={`Текущий: ${point.current}`}
-                        >
-                          <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {point.current}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 font-mono">
-                        {point.label}
-                      </span>
-                    </div>
-                  );
-                })}
+            {timelinePoints.length === 0 ? (
+              <div className="h-56 flex flex-col items-center justify-center text-center text-slate-400 text-xs">
+                <BarChart3 className="w-8 h-8 text-slate-300 dark:text-slate-700 mb-2" />
+                <p className="font-medium text-slate-600 dark:text-slate-300">Данные отсутствуют</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Создайте и выполните задачи для отображения динамики</p>
               </div>
-            </div>
+            ) : (
+              <div className="pt-4 pb-2">
+                <div className="h-56 flex items-end justify-between gap-3 px-2">
+                  {timelinePoints.map((point, idx) => {
+                    const currentHeight = Math.round((point.current / maxTimelineVal) * 100);
+                    const prevHeight = Math.round((point.previous / maxTimelineVal) * 100);
+
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                        <div className="w-full flex items-end justify-center gap-1.5 h-full">
+                          {/* Previous bar */}
+                          <div
+                            className="w-1/2 max-w-[20px] bg-slate-200 dark:bg-slate-800 rounded-t-md transition-all duration-300 group-hover:bg-slate-300"
+                            style={{ height: `${prevHeight}%` }}
+                            title={`Прошлый: ${point.previous}`}
+                          />
+                          {/* Current bar */}
+                          <div
+                            className="w-1/2 max-w-[20px] bg-blue-600 hover:bg-blue-700 rounded-t-md transition-all duration-300 relative"
+                            style={{ height: `${currentHeight}%` }}
+                            title={`Текущий: ${point.current}`}
+                          >
+                            <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {point.current}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 font-mono">
+                          {point.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-            <span>Источник данных: локальный трекер спринта</span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-              ↑ Прирост продуктивности +20%
+            <span>Источник данных: локальный трекер задач</span>
+            <span className="font-mono text-slate-600 dark:text-slate-300">
+              {tasks.length} задач
             </span>
           </div>
         </div>
@@ -616,8 +620,8 @@ export const AnalyticsPage: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-            <span>94% задач сдаются без просрочек</span>
-            <span className="font-mono text-emerald-600 font-semibold">SLA: 98%</span>
+            <span>Локальный учёт эффективности</span>
+            <span className="font-mono text-slate-600 dark:text-slate-300">{tasks.filter((t) => t.completed).length} выполнено</span>
           </div>
         </div>
       </div>
