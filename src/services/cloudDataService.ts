@@ -47,7 +47,40 @@ export class CloudDataService {
         supabase.from('strategy_visions').select('*').eq('workspace_id', workspaceId).maybeSingle(),
         supabase.from('workspace_settings').select('*').eq('workspace_id', workspaceId).maybeSingle(),
         supabase.from('notifications').select('*').eq('workspace_id', workspaceId),
-        supabase.from('workspace_members').select('*, profiles(*)').eq('workspace_id', workspaceId),
+        // Fetch workspace members; if PostgREST relation is pending schema reload or fails, fallback query ensures continuity
+        supabase
+          .from('workspace_members')
+          .select('*, profiles(*)')
+          .eq('workspace_id', workspaceId)
+          .then(async (res) => {
+            if (res.error) {
+              console.warn('workspace_members embedded query note:', res.error.message);
+              // Fallback: two-step query if foreign key relationship is not yet recognized by PostgREST
+              const { data: rawMembers, error: rawMembersErr } = await supabase
+                .from('workspace_members')
+                .select('*')
+                .eq('workspace_id', workspaceId);
+
+              if (rawMembersErr || !rawMembers) return res;
+
+              const userIds = rawMembers.map((m: any) => m.user_id).filter(Boolean);
+              if (userIds.length === 0) return { ...res, error: null, data: [] };
+
+              const { data: profiles } = await supabase
+                .from('profiles')
+                .select('*')
+                .in('id', userIds);
+
+              const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+              const merged = rawMembers.map((m: any) => ({
+                ...m,
+                profiles: profileMap.get(m.user_id) || null,
+              }));
+
+              return { ...res, error: null, data: merged };
+            }
+            return res;
+          }),
       ]);
 
       const tasks: Task[] = (tasksRes.data || []).map((t) => ({
