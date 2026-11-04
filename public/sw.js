@@ -1,6 +1,6 @@
 // ONE TEAM — Service Worker with Secure Caching
-// CACHE VERSION (Bumped to v2 for brand identity & icons update)
-const CACHE_NAME = 'oneteam-shell-v2';
+// CACHE VERSION (Bumped to v3 for favicon & brand icons update)
+const CACHE_NAME = 'oneteam-shell-v3';
 
 // Static assets whitelist (public shell only - no user or API data)
 const PRECACHE_ASSETS = [
