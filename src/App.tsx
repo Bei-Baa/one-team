@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 import { reminderService } from './services/reminderService';
 import { Sidebar } from './components/layout/Sidebar';
@@ -19,6 +20,9 @@ import { PriorityModal } from './components/strategy/PriorityModal';
 import { PlanItemModal } from './components/strategy/PlanItemModal';
 import { MissionModal } from './components/strategy/MissionModal';
 import { VisionModal } from './components/strategy/VisionModal';
+import { AuthScreen } from './components/auth/AuthScreen';
+import { WorkspaceSetupModal } from './components/workspace/WorkspaceSetupModal';
+import { isSupabaseConfigured } from './services/supabaseClient';
 import {
   LayoutDashboard,
   KanbanSquare,
@@ -30,12 +34,14 @@ import {
   Building2,
   Settings as SettingsIcon,
   X,
+  Loader2,
 } from 'lucide-react';
 import { PageId } from './types';
 import { Avatar } from './components/common/Avatar';
 
 const MainLayout: React.FC = () => {
   const { activePage, setActivePage, settings } = useApp();
+  const { currentWorkspace, workspaces } = useAuth();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -166,6 +172,9 @@ const MainLayout: React.FC = () => {
       {/* Global Quick Create Modal */}
       <QuickCreateModal />
 
+      {/* Workspace Setup Modal if User has zero workspaces */}
+      <WorkspaceSetupModal isOpen={workspaces.length === 0 && Boolean(currentWorkspace === null)} />
+
       {/* Strategy Management Modals */}
       <GoalModal />
       <PriorityModal />
@@ -176,10 +185,34 @@ const MainLayout: React.FC = () => {
   );
 };
 
-export default function App() {
+const RootNavigator: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full bg-[#080C14] flex flex-col items-center justify-center text-white space-y-4">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <p className="text-xs text-slate-400 font-medium">Загрузка платформы ONE TEAM...</p>
+      </div>
+    );
+  }
+
+  // If user is not authenticated in cloud environment, display AuthScreen
+  if (isSupabaseConfigured && !user) {
+    return <AuthScreen />;
+  }
+
   return (
     <AppProvider>
       <MainLayout />
     </AppProvider>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
   );
 }
