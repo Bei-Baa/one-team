@@ -65,7 +65,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks }) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start min-h-[600px] pb-6">
+    <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start min-h-[500px] pb-6">
       {columns.map((col) => {
         const columnTasks = tasks.filter((t) => t.status === col.id);
         const isDropTarget = activeDropColumn === col.id;
@@ -76,7 +76,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks }) => {
             onDragOver={(e) => handleDragOver(e, col.id)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, col.id)}
-            className={`flex flex-col bg-slate-100/70 dark:bg-slate-900/50 rounded-2xl p-3 border transition-colors min-h-[500px] ${
+            className={`w-full flex flex-col bg-slate-100/70 dark:bg-slate-900/50 rounded-2xl p-3 border transition-colors min-h-[300px] sm:min-h-[500px] ${
               isDropTarget
                 ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 ring-2 ring-blue-500/20'
                 : 'border-slate-200/60 dark:border-slate-800/60'

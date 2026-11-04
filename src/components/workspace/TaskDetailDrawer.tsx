@@ -82,10 +82,10 @@ export const TaskDetailDrawer: React.FC = () => {
         onClick={handleClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-xl bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
+        <div className="w-screen sm:max-w-xl bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between pt-safe pb-safe">
           {/* Drawer Header */}
-          <div className="px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 shrink-0">
+          <div className="px-4 sm:px-6 py-3.5 sm:py-4.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => toggleTaskCompletion(task.id)}
@@ -122,7 +122,7 @@ export const TaskDetailDrawer: React.FC = () => {
           </div>
 
           {/* Drawer Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
             {/* Task Title */}
             <div>
               {isEditingTitle ? (
@@ -131,12 +131,12 @@ export const TaskDetailDrawer: React.FC = () => {
                     type="text"
                     value={titleInput}
                     onChange={(e) => setTitleInput(e.target.value)}
-                    className="flex-1 text-lg font-bold text-slate-900 dark:text-white px-3 py-1.5 rounded-lg border border-blue-500 bg-white dark:bg-slate-800 outline-hidden"
+                    className="flex-1 text-base sm:text-lg font-bold text-slate-900 dark:text-white px-3 py-1.5 rounded-lg border border-blue-500 bg-white dark:bg-slate-800 outline-hidden"
                     autoFocus
                   />
                   <button
                     onClick={handleSaveTitle}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold"
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold cursor-pointer shrink-0"
                   >
                     Готово
                   </button>
@@ -144,7 +144,7 @@ export const TaskDetailDrawer: React.FC = () => {
               ) : (
                 <div className="flex items-start justify-between group">
                   <h2
-                    className={`text-xl font-bold text-slate-900 dark:text-white leading-tight ${
+                    className={`text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight break-words ${
                       task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''
                     }`}
                   >
@@ -155,7 +155,7 @@ export const TaskDetailDrawer: React.FC = () => {
                       setTitleInput(task.title);
                       setIsEditingTitle(true);
                     }}
-                    className="p-1 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-opacity ml-2 shrink-0 cursor-pointer"
                     title="Редактировать заголовок"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const TaskDetailDrawer: React.FC = () => {
             </div>
 
             {/* Properties Grid */}
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
               {/* Status */}
               <div>
                 <label className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">

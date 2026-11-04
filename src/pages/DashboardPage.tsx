@@ -16,39 +16,39 @@ export const DashboardPage: React.FC = () => {
   const activeClients = clients.filter((c) => c.status !== 'archived');
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-5 sm:space-y-6 max-w-7xl mx-auto pb-8 sm:pb-12">
       {/* Top Greeting Header from reference */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Доброе утро, {settings.currentUser.name.split(' ')[0]}!
             </h1>
-            <span className="text-2xl" role="img" aria-label="wave">
+            <span className="text-xl sm:text-2xl" role="img" aria-label="wave">
               👋
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-1.5">
             <span>Двигаемся к большим целям</span>
             <span className="text-blue-600 dark:text-blue-400 font-semibold">🚀</span>
-            <span className="text-slate-300 dark:text-slate-700">·</span>
-            <span className="font-mono text-xs">Все 9 разделов синхронизированы</span>
+            <span className="text-slate-300 dark:text-slate-700 hidden xs:inline">·</span>
+            <span className="font-mono text-[11px] sm:text-xs">Все 9 разделов синхронизированы</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             onClick={() => setActivePage('strategy')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
           >
-            <span>🎯 Стратегия компании</span>
+            <span>🎯 Стратегия</span>
           </button>
           <button
             onClick={() => openCreateTask()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
-            <span>Добавить задачу</span>
+            <span>Новая задача</span>
           </button>
         </div>
       </div>
