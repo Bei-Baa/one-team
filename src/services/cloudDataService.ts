@@ -215,24 +215,32 @@ export class CloudDataService {
     }
   }
 
+  // UUID Helper
+  private isValidUUID(str: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+  }
+
   // Cloud Mutators
   async syncTask(workspaceId: string, task: Task) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('tasks').upsert({
-        id: task.id.length > 20 && !task.id.startsWith('task-') ? task.id : undefined,
+      const payload: Record<string, any> = {
         workspace_id: workspaceId,
-        project_id: task.projectId || null,
+        project_id: task.projectId && this.isValidUUID(task.projectId) ? task.projectId : null,
         title: task.title,
-        description: task.description,
+        description: task.description || '',
         status: task.status,
         priority: task.priority,
-        due_date: task.dueDate,
+        due_date: task.dueDate || new Date().toISOString().split('T')[0],
         completed: task.completed,
-        comments: task.comments,
-        activities: task.activities,
+        comments: task.comments || [],
+        activities: task.activities || [],
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (this.isValidUUID(task.id)) {
+        payload.id = task.id;
+      }
+      await supabase.from('tasks').upsert(payload);
     } catch (e) {
       console.warn('Sync task failed:', e);
     }
@@ -241,7 +249,9 @@ export class CloudDataService {
   async deleteTask(workspaceId: string, taskId: string) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('tasks').delete().eq('id', taskId).eq('workspace_id', workspaceId);
+      if (this.isValidUUID(taskId)) {
+        await supabase.from('tasks').delete().eq('id', taskId).eq('workspace_id', workspaceId);
+      }
     } catch (e) {
       console.warn('Delete task failed:', e);
     }
@@ -250,21 +260,24 @@ export class CloudDataService {
   async syncProject(workspaceId: string, proj: Project) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('projects').upsert({
-        id: proj.id.length > 20 && !proj.id.startsWith('proj-') ? proj.id : undefined,
+      const payload: Record<string, any> = {
         workspace_id: workspaceId,
         name: proj.name,
-        description: proj.description,
+        description: proj.description || '',
         status: proj.status,
-        progress: proj.progress,
-        deadline: proj.deadline,
-        category: proj.category,
-        is_archived: proj.isArchived,
-        client_id: proj.clientId || null,
-        client_name: proj.clientName,
-        member_ids: proj.memberIds,
+        progress: proj.progress || 0,
+        deadline: proj.deadline || new Date().toISOString().split('T')[0],
+        category: proj.category || 'Общий',
+        is_archived: proj.isArchived || false,
+        client_id: proj.clientId && this.isValidUUID(proj.clientId) ? proj.clientId : null,
+        client_name: proj.clientName || '',
+        member_ids: proj.memberIds || [],
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (this.isValidUUID(proj.id)) {
+        payload.id = proj.id;
+      }
+      await supabase.from('projects').upsert(payload);
     } catch (e) {
       console.warn('Sync project failed:', e);
     }
@@ -273,7 +286,9 @@ export class CloudDataService {
   async deleteProject(workspaceId: string, projId: string) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('projects').delete().eq('id', projId).eq('workspace_id', workspaceId);
+      if (this.isValidUUID(projId)) {
+        await supabase.from('projects').delete().eq('id', projId).eq('workspace_id', workspaceId);
+      }
     } catch (e) {
       console.warn('Delete project failed:', e);
     }
@@ -282,24 +297,30 @@ export class CloudDataService {
   async syncClient(workspaceId: string, client: Client) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('clients').upsert({
-        id: client.id.length > 20 && !client.id.startsWith('client-') ? client.id : undefined,
+      const payload: Record<string, any> = {
         workspace_id: workspaceId,
         name: client.name,
-        contact_person: client.contactPerson,
-        email: client.email,
-        phone: client.phone,
+        contact_person: client.contactPerson || '',
+        email: client.email || '',
+        phone: client.phone || '',
         status: client.status,
-        deal_value: client.dealValue,
-        deal_currency: client.dealCurrency,
-        associated_project_id: client.associatedProjectId || null,
-        description: client.description,
-        avatar: client.avatar,
-        last_interaction: client.lastInteraction,
-        notes: client.notes,
-        interactions: client.interactions,
+        deal_value: Number(Number(client.dealValue || 0).toFixed(2)),
+        deal_currency: client.dealCurrency || 'KZT',
+        associated_project_id:
+          client.associatedProjectId && this.isValidUUID(client.associatedProjectId)
+            ? client.associatedProjectId
+            : null,
+        description: client.description || '',
+        avatar: client.avatar || '',
+        last_interaction: client.lastInteraction || new Date().toISOString().split('T')[0],
+        notes: client.notes || [],
+        interactions: client.interactions || [],
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (this.isValidUUID(client.id)) {
+        payload.id = client.id;
+      }
+      await supabase.from('clients').upsert(payload);
     } catch (e) {
       console.warn('Sync client failed:', e);
     }
@@ -308,7 +329,9 @@ export class CloudDataService {
   async deleteClient(workspaceId: string, clientId: string) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('clients').delete().eq('id', clientId).eq('workspace_id', workspaceId);
+      if (this.isValidUUID(clientId)) {
+        await supabase.from('clients').delete().eq('id', clientId).eq('workspace_id', workspaceId);
+      }
     } catch (e) {
       console.warn('Delete client failed:', e);
     }
@@ -317,21 +340,24 @@ export class CloudDataService {
   async syncTransaction(workspaceId: string, tx: Transaction) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('transactions').upsert({
-        id: tx.id.length > 20 && !tx.id.startsWith('tx-') ? tx.id : undefined,
+      const payload: Record<string, any> = {
         workspace_id: workspaceId,
         title: tx.title,
-        amount: tx.amount,
-        currency: tx.currency,
+        amount: Number(Number(tx.amount || 0).toFixed(2)),
+        currency: tx.currency || 'KZT',
         type: tx.type,
         category: tx.category,
-        date: tx.date,
+        date: tx.date || new Date().toISOString().split('T')[0],
         status: tx.status,
-        project_id: tx.projectId || null,
-        client_id: tx.clientId || null,
-        notes: tx.notes,
+        project_id: tx.projectId && this.isValidUUID(tx.projectId) ? tx.projectId : null,
+        client_id: tx.clientId && this.isValidUUID(tx.clientId) ? tx.clientId : null,
+        notes: tx.notes || '',
         updated_at: new Date().toISOString(),
-      });
+      };
+      if (this.isValidUUID(tx.id)) {
+        payload.id = tx.id;
+      }
+      await supabase.from('transactions').upsert(payload);
     } catch (e) {
       console.warn('Sync transaction failed:', e);
     }
@@ -340,9 +366,199 @@ export class CloudDataService {
   async deleteTransaction(workspaceId: string, txId: string) {
     if (!isSupabaseConfigured || !workspaceId) return;
     try {
-      await supabase.from('transactions').delete().eq('id', txId).eq('workspace_id', workspaceId);
+      if (this.isValidUUID(txId)) {
+        await supabase.from('transactions').delete().eq('id', txId).eq('workspace_id', workspaceId);
+      }
     } catch (e) {
       console.warn('Delete transaction failed:', e);
+    }
+  }
+
+  // Strategy Mutators
+  async syncGoal(workspaceId: string, goal: StrategicGoal) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      const payload: Record<string, any> = {
+        workspace_id: workspaceId,
+        title: goal.title,
+        description: goal.description || '',
+        category: goal.category || 'Развитие',
+        owner_name: goal.ownerName || '',
+        start_date: goal.startDate || new Date().toISOString().split('T')[0],
+        target_date: goal.targetDate || new Date().toISOString().split('T')[0],
+        progress: goal.progress || 0,
+        status: goal.status,
+        related_project_ids: goal.relatedProjectIds || [],
+        success_criteria: goal.successCriteria || [],
+        updated_at: new Date().toISOString(),
+      };
+      if (this.isValidUUID(goal.id)) {
+        payload.id = goal.id;
+      }
+      await supabase.from('strategic_goals').upsert(payload);
+    } catch (e) {
+      console.warn('Sync goal failed:', e);
+    }
+  }
+
+  async deleteGoal(workspaceId: string, goalId: string) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      if (this.isValidUUID(goalId)) {
+        await supabase.from('strategic_goals').delete().eq('id', goalId).eq('workspace_id', workspaceId);
+      }
+    } catch (e) {
+      console.warn('Delete goal failed:', e);
+    }
+  }
+
+  async syncPriority(workspaceId: string, priority: StrategicPriority) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      const payload: Record<string, any> = {
+        workspace_id: workspaceId,
+        name: priority.name,
+        description: priority.description || '',
+        importance: priority.importance,
+        owner_name: priority.ownerName || '',
+        expected_result: priority.expectedResult || '',
+        deadline: priority.deadline || new Date().toISOString().split('T')[0],
+        status: priority.status,
+        related_goal_id:
+          priority.relatedGoalId && this.isValidUUID(priority.relatedGoalId)
+            ? priority.relatedGoalId
+            : null,
+        sort_order: priority.order || 0,
+        progress: priority.progress || 0,
+        updated_at: new Date().toISOString(),
+      };
+      if (this.isValidUUID(priority.id)) {
+        payload.id = priority.id;
+      }
+      await supabase.from('strategic_priorities').upsert(payload);
+    } catch (e) {
+      console.warn('Sync priority failed:', e);
+    }
+  }
+
+  async deletePriority(workspaceId: string, priorityId: string) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      if (this.isValidUUID(priorityId)) {
+        await supabase
+          .from('strategic_priorities')
+          .delete()
+          .eq('id', priorityId)
+          .eq('workspace_id', workspaceId);
+      }
+    } catch (e) {
+      console.warn('Delete priority failed:', e);
+    }
+  }
+
+  async syncPlanItem(workspaceId: string, plan: DevelopmentPlanItem) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      const payload: Record<string, any> = {
+        workspace_id: workspaceId,
+        title: plan.title,
+        description: plan.description || '',
+        time_period: plan.timePeriod,
+        quarter: plan.quarter,
+        month: plan.month || '',
+        owner_name: plan.ownerName || '',
+        status: plan.status,
+        progress: plan.progress || 0,
+        related_goal_id:
+          plan.relatedGoalId && this.isValidUUID(plan.relatedGoalId) ? plan.relatedGoalId : null,
+        expected_outcome: plan.expectedOutcome || '',
+        deadline: plan.deadline || new Date().toISOString().split('T')[0],
+        sort_order: plan.order || 0,
+        updated_at: new Date().toISOString(),
+      };
+      if (this.isValidUUID(plan.id)) {
+        payload.id = plan.id;
+      }
+      await supabase.from('strategic_plans').upsert(payload);
+    } catch (e) {
+      console.warn('Sync plan item failed:', e);
+    }
+  }
+
+  async deletePlanItem(workspaceId: string, planId: string) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      if (this.isValidUUID(planId)) {
+        await supabase
+          .from('strategic_plans')
+          .delete()
+          .eq('id', planId)
+          .eq('workspace_id', workspaceId);
+      }
+    } catch (e) {
+      console.warn('Delete plan item failed:', e);
+    }
+  }
+
+  async syncMission(workspaceId: string, mission: TeamMission) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      await supabase.from('strategy_missions').upsert(
+        {
+          workspace_id: workspaceId,
+          statement: mission.statement || '',
+          purpose: mission.purpose || '',
+          customer_value: mission.customerValue || '',
+          principles: mission.principles || [],
+          owner_name: mission.ownerName || '',
+          revisions: mission.revisions || [],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'workspace_id' }
+      );
+    } catch (e) {
+      console.warn('Sync mission failed:', e);
+    }
+  }
+
+  async syncVision(workspaceId: string, vision: TeamVision) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      await supabase.from('strategy_visions').upsert(
+        {
+          workspace_id: workspaceId,
+          statement: vision.statement || '',
+          desired_state: vision.desiredState || '',
+          direction: vision.direction || '',
+          target_horizon: vision.targetHorizon || '3_years',
+          expected_outcomes: vision.expectedOutcomes || [],
+          owner_name: vision.ownerName || '',
+          revisions: vision.revisions || [],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'workspace_id' }
+      );
+    } catch (e) {
+      console.warn('Sync vision failed:', e);
+    }
+  }
+
+  // Settings Mutator
+  async syncSettings(workspaceId: string, settings: WorkspaceSettings) {
+    if (!isSupabaseConfigured || !workspaceId) return;
+    try {
+      await supabase.from('workspace_settings').upsert(
+        {
+          workspace_id: workspaceId,
+          default_currency: settings.defaultCurrency || 'KZT',
+          theme: settings.theme || 'dark',
+          notifications_config: settings.notifications || {},
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'workspace_id' }
+      );
+    } catch (e) {
+      console.warn('Sync settings failed:', e);
     }
   }
 }

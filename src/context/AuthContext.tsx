@@ -123,7 +123,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       async (event, currentSession) => {
         if (!isMounted) return;
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (
+          event === 'SIGNED_IN' ||
+          event === 'TOKEN_REFRESHED' ||
+          event === 'USER_UPDATED' ||
+          event === 'PASSWORD_RECOVERY'
+        ) {
           if (currentSession?.user) {
             setSession(currentSession);
             setUser(currentSession.user);
