@@ -24,6 +24,17 @@ ONE TEAM переведён на облачную архитектуру с по
    - Функции безопасности RLS (`is_workspace_member`, `can_edit_in_workspace`, `can_manage_workspace`, `get_workspace_role`);
    - Политики Row Level Security на всех таблицах.
 
+### Миграция 002: Внешний ключ workspace_members -> profiles
+Для устранения ошибки PGRST200 при запросе `workspace_members?select=*,profiles(*)`:
+1. Откройте **SQL Editor** в Supabase Dashboard.
+2. Откройте файл `supabase/migrations/002_workspace_members_profiles_fk.sql`.
+3. Вставьте его содержимое и нажмите **Run**.
+4. Миграция:
+   - Безопасно проверит и создаст недостающие профили для существующих участников;
+   - Добавит внешний ключ `fk_workspace_members_profile` (`workspace_members.user_id` -> `profiles.id`);
+   - Добавит индекс для ускорения JOIN-запросов;
+   - Отправит команду перезагрузки кэша схемы PostgREST (`NOTIFY pgrst, 'reload schema'`).
+
 ---
 
 ## 3. Переменные окружения

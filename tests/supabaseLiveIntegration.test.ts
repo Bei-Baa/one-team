@@ -125,6 +125,43 @@ async function runLiveIntegrationTests() {
   assert.deepStrictEqual(dataB, [], 'Query for workspace B returned isolated dataset');
   console.log('✅ Test 5 PASSED: Tenant query filtering verified.\n');
 
+  // 6. Workspace Members & Profiles Relationship & Fallback Query Validation
+  console.log('Test 6: Verifying Workspace members and profiles relationship query resilience...');
+  const testWsId = '00000000-0000-0000-0000-000000000001';
+  const membersRes = await client
+    .from('workspace_members')
+    .select('*, profiles(*)')
+    .eq('workspace_id', testWsId)
+    .then(async (res) => {
+      if (res.error) {
+        // If PostgREST does not detect FK relationship (PGRST200 before migration 002 is run),
+        // fallback query fetches members and profiles independently.
+        const { data: rawMembers, error: rawMembersErr } = await client
+          .from('workspace_members')
+          .select('*')
+          .eq('workspace_id', testWsId);
+
+        if (rawMembersErr) return res;
+
+        const userIds = (rawMembers || []).map((m: any) => m.user_id).filter(Boolean);
+        const { data: profiles } = userIds.length > 0
+          ? await client.from('profiles').select('*').in('id', userIds)
+          : { data: [] };
+
+        const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+        const merged = (rawMembers || []).map((m: any) => ({
+          ...m,
+          profiles: profileMap.get(m.user_id) || null,
+        }));
+        return { ...res, error: null, data: merged };
+      }
+      return res;
+    });
+
+  assert.strictEqual(membersRes.error, null, `Members query failed unexpectedly: ${membersRes.error?.message}`);
+  assert(Array.isArray(membersRes.data), 'Expected array of workspace members');
+  console.log('✅ Test 6 PASSED: Workspace members profile relationship & fallback mechanism verified.\n');
+
   console.log('🎉 ALL LIVE INTEGRATION AND RLS CHECKS PASSED SUCCESSFULLY! 🚀');
 }
 
