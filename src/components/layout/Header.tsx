@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onMobileMenuToggle }) => {
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 max-w-md">
         <button
           onClick={onMobileMenuToggle}
-          className="md:hidden p-2 -ml-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 touch-target flex items-center justify-center shrink-0 cursor-pointer"
+          className="tablet-hidden p-2 -ml-1 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 touch-target flex items-center justify-center shrink-0 cursor-pointer"
           aria-label="Открыть меню"
         >
           <Menu className="w-5 h-5" />

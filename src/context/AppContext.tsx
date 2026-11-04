@@ -171,7 +171,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const { currentWorkspace, user, profile } = useAuth();
 
   const [activePage, setActivePage] = useState<PageId>('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 744 && window.innerWidth < 1024;
+    }
+    return false;
+  });
+
+  // Dynamically update sidebar collapse state on orientation change/window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 744 && window.innerWidth < 1024) {
+        setSidebarCollapsed(true);
+      } else if (window.innerWidth >= 1024) {
+        setSidebarCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [globalSearch, setGlobalSearch] = useState('');
 
   // Domain data

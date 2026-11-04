@@ -89,8 +89,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart }) => {
                 e.stopPropagation();
                 updateTaskStatus(task.id, nextStatus);
               }}
-              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors opacity-0 group-hover:opacity-100"
+              className="text-xs font-semibold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors touch-target flex items-center justify-center cursor-pointer min-h-[32px] min-w-[32px]"
               title="Перевести на следующий статус"
+              aria-label="Перевести на следующий статус"
             >
               →
             </button>

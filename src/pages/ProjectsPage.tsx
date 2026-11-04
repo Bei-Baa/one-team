@@ -98,14 +98,14 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       {/* Filter Tabs & Local Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-2.5 sm:p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-2.5 sm:p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
         {/* Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 no-scrollbar">
           {filterTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setStatusFilter(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer min-h-[38px] ${
                 statusFilter === tab.id
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -126,7 +126,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
 
         {/* Local Search Input */}
-        <div className="relative w-full md:w-64">
+        <div className="relative w-full lg:w-64 shrink-0">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
