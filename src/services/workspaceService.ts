@@ -70,7 +70,11 @@ export class WorkspaceService {
         .eq('user_id', userId)
         .eq('status', 'active');
 
-      if (memberErr || !memberRows || memberRows.length === 0) return [];
+      if (memberErr) {
+        console.warn('Error fetching workspace member rows:', memberErr);
+        return [];
+      }
+      if (!memberRows || memberRows.length === 0) return [];
 
       const workspaceIds = memberRows.map((m) => m.workspace_id);
       const { data: workspaces, error: wsErr } = await supabase
@@ -79,7 +83,11 @@ export class WorkspaceService {
         .in('id', workspaceIds)
         .order('created_at', { ascending: false });
 
-      if (wsErr || !workspaces) return [];
+      if (wsErr) {
+        console.warn('Error fetching user workspaces:', wsErr);
+        return [];
+      }
+      if (!workspaces) return [];
 
       return workspaces.map((w) => ({
         id: w.id,
@@ -90,7 +98,8 @@ export class WorkspaceService {
         createdBy: w.created_by,
         createdAt: w.created_at,
       }));
-    } catch {
+    } catch (err) {
+      console.warn('getUserWorkspaces exception:', err);
       return [];
     }
   }
@@ -177,15 +186,22 @@ export class WorkspaceService {
         `)
         .eq('workspace_id', workspaceId);
 
-      if (error || !members) return [];
+      if (error) {
+        console.warn('Error fetching workspace members:', error);
+        return [];
+      }
+      if (!members) return [];
 
       const userIds = members.map((m) => m.user_id).filter(Boolean);
       let profiles: any[] = [];
       if (userIds.length > 0) {
-        const { data: profData } = await supabase
+        const { data: profData, error: profErr } = await supabase
           .from('profiles')
           .select('*')
           .in('id', userIds);
+        if (profErr) {
+          console.warn('Error fetching member profiles:', profErr);
+        }
         profiles = profData || [];
       }
 
@@ -212,7 +228,8 @@ export class WorkspaceService {
             : undefined,
         };
       });
-    } catch {
+    } catch (err) {
+      console.warn('getWorkspaceMembers exception:', err);
       return [];
     }
   }
@@ -271,49 +288,72 @@ export class WorkspaceService {
       throw new Error('Роль владельца (Owner) не может быть назначена через приглашение');
     }
 
+    if (!['admin', 'editor', 'viewer'].includes(role)) {
+      throw new Error('Недопустимая роль для приглашения. Доступны: Admin, Editor, Viewer');
+    }
+
     if (!this.isConfigured()) {
       throw new Error('Supabase is not configured');
     }
 
-    const { data: userResp } = await supabase.auth.getUser();
-    if (!userResp.user) throw new Error('Необходима авторизация');
+    const { data: userResp, error: userAuthErr } = await supabase.auth.getUser();
+    if (userAuthErr || !userResp?.user) {
+      throw new Error('Необходима авторизация для отправки приглашения');
+    }
     const inviter = userResp.user;
+    const inviterEmail = (inviter.email || '').toLowerCase().trim();
 
-    // Check if inviter is manager (owner or admin)
-    const { data: inviterMember } = await supabase
+    // 1. Prevent inviting oneself
+    if (inviterEmail && inviterEmail === normalizedEmail) {
+      throw new Error('Вы не можете пригласить самого себя');
+    }
+
+    // 2. Check if inviter is manager (owner or admin)
+    const { data: inviterMember, error: inviterMemberErr } = await supabase
       .from('workspace_members')
       .select('role, status')
       .eq('workspace_id', workspaceId)
       .eq('user_id', inviter.id)
       .maybeSingle();
 
+    if (inviterMemberErr) {
+      throw new Error(`Ошибка проверки прав: ${inviterMemberErr.message}`);
+    }
+
     if (!inviterMember || !['owner', 'admin'].includes(inviterMember.role)) {
       throw new Error('Недостаточно прав. Только Владелец и Администратор могут приглашать участников.');
     }
 
-    // Check if the user is already an active member in this workspace
-    // Check by existing profiles matching this email
-    const { data: existingProfiles } = await supabase
+    // 3. Check if the user is already an active member in this workspace (by profiles matching this email)
+    const { data: existingProfiles, error: profErr } = await supabase
       .from('profiles')
       .select('id, email')
       .ilike('email', normalizedEmail);
 
+    if (profErr) {
+      throw new Error(`Ошибка проверки существования профиля: ${profErr.message}`);
+    }
+
     if (existingProfiles && existingProfiles.length > 0) {
       const existingUserIds = existingProfiles.map((p) => p.id);
-      const { data: existingMembers } = await supabase
+      const { data: existingMembers, error: memErr } = await supabase
         .from('workspace_members')
         .select('id, status')
         .eq('workspace_id', workspaceId)
         .in('user_id', existingUserIds)
         .eq('status', 'active');
 
+      if (memErr) {
+        throw new Error(`Ошибка проверки членства: ${memErr.message}`);
+      }
+
       if (existingMembers && existingMembers.length > 0) {
-        throw new Error('Пользователь с этим email уже является участником этого рабочего пространства');
+        throw new Error('Пользователь с этим email уже является активным участником этого пространства');
       }
     }
 
-    // Check if there is already a pending invitation for this email in this workspace
-    const { data: existingPending } = await supabase
+    // 4. Check if there is already a pending active invitation for this email in this workspace
+    const { data: existingPending, error: pendingErr } = await supabase
       .from('workspace_invitations')
       .select('id, status, expires_at')
       .eq('workspace_id', workspaceId)
@@ -321,6 +361,10 @@ export class WorkspaceService {
       .eq('status', 'pending')
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
+
+    if (pendingErr) {
+      throw new Error(`Ошибка проверки существующих приглашений: ${pendingErr.message}`);
+    }
 
     if (existingPending) {
       throw new Error('Приглашение для этого email уже отправлено и ожидает подтверждения');
@@ -336,7 +380,7 @@ export class WorkspaceService {
       role,
       invited_by: inviter.id,
       status: 'pending',
-      token_hash: '', // Deprecated / optional in email-only architecture
+      token_hash: null,
       expires_at: expiresAt,
     };
 
@@ -347,11 +391,10 @@ export class WorkspaceService {
       .single();
 
     if (insertErr || !inserted) {
-      // Check for unique conflict error
       if (insertErr?.code === '23505' || insertErr?.message?.includes('duplicate key')) {
         throw new Error('Приглашение для этого email уже существует и ожидает принятия');
       }
-      throw insertErr || new Error('Ошибка создания приглашения');
+      throw new Error(insertErr?.message || 'Ошибка создания приглашения');
     }
 
     // Fetch workspace name for notification email
@@ -378,6 +421,8 @@ export class WorkspaceService {
     try {
       const { data: fnData, error: fnErr } = await supabase.functions.invoke('send-invitation-email', {
         body: {
+          invitationId: inserted.id,
+          workspaceId,
           workspaceName,
           inviterName,
           inviteeName: inviteeName.trim(),
@@ -396,7 +441,7 @@ export class WorkspaceService {
       } else if (fnData?.success) {
         emailDelivery = {
           sent: true,
-          provider: fnData.provider || 'configured',
+          provider: fnData.provider || 'resend',
           error: undefined,
         };
       } else if (fnData?.error === 'EMAIL_PROVIDER_UNCONFIGURED') {
@@ -448,7 +493,11 @@ export class WorkspaceService {
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-      if (error || !invitations || invitations.length === 0) return [];
+      if (error) {
+        console.warn('Error querying user invitations:', error);
+        return [];
+      }
+      if (!invitations || invitations.length === 0) return [];
 
       // Hydrate workspace names and inviter profiles
       const workspaceIds = Array.from(new Set(invitations.map((i) => i.workspace_id)));
@@ -540,7 +589,11 @@ export class WorkspaceService {
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-      if (error || !data) return [];
+      if (error) {
+        console.warn('Error fetching workspace invitations:', error);
+        return [];
+      }
+      if (!data) return [];
       return data.map((inv) => ({
         id: inv.id,
         workspaceId: inv.workspace_id,
@@ -552,7 +605,8 @@ export class WorkspaceService {
         expiresAt: inv.expires_at,
         createdAt: inv.created_at,
       }));
-    } catch {
+    } catch (err) {
+      console.warn('getInvitations exception:', err);
       return [];
     }
   }
