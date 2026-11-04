@@ -15,8 +15,32 @@
  */
 
 import { strict as assert } from 'assert';
-import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+import fs from 'fs';
+
+// Pre-populate environment variables before static evaluation/mocks
+if (fs.existsSync('.env.local')) {
+  const envContent = fs.readFileSync('.env.local', 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const idx = trimmed.indexOf('=');
+      if (idx !== -1) {
+        const k = trimmed.slice(0, idx).trim();
+        const v = trimmed.slice(idx + 1).trim();
+        if (!process.env[k]) {
+          process.env[k] = v;
+        }
+      }
+    }
+  }
+}
+
+if (!process.env.VITE_SUPABASE_URL) {
+  process.env.VITE_SUPABASE_URL = 'https://dshlppccurayjfusbcqf.supabase.co';
+}
+if (!process.env.VITE_SUPABASE_ANON_KEY) {
+  process.env.VITE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key_for_testing_greater_than_20_chars';
+}
 
 // Mock browser globals for Node.js tsx runner
 if (typeof (globalThis as any).localStorage === 'undefined') {

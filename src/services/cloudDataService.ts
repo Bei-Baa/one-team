@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured, getIsSupabaseConfigured } from './supabaseClient';
 import {
   Task,
   Project,
@@ -19,7 +19,7 @@ export class CloudDataService {
    * Load entire active workspace dataset from Supabase PostgreSQL
    */
   async loadWorkspaceData(workspaceId: string) {
-    if (!isSupabaseConfigured || !workspaceId) return null;
+    if ((!isSupabaseConfigured && !getIsSupabaseConfigured?.()) || !workspaceId) return null;
 
     try {
       const [
