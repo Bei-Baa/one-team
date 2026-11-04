@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   PageId,
   Task,
@@ -21,6 +21,8 @@ import {
   DevelopmentPlanItem,
 } from '../types';
 import { storageService } from '../services/storage';
+import { useAuth } from './AuthContext';
+import { cloudDataService } from '../services/cloudDataService';
 
 interface AppContextType {
   // Navigation
@@ -166,6 +168,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { currentWorkspace, user, profile } = useAuth();
+
   const [activePage, setActivePage] = useState<PageId>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -194,6 +198,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [developmentPlan, setDevelopmentPlan] = useState<DevelopmentPlanItem[]>(() =>
     storageService.getDevelopmentPlan()
   );
+
+  // Synchronize when currentWorkspace changes (Zero data leakage across workspaces)
+  useEffect(() => {
+    if (currentWorkspace?.id) {
+      // Re-initialize state for new workspace
+      setSettings((prev) => ({
+        ...prev,
+        workspaceName: currentWorkspace.name,
+        workspaceDescription: currentWorkspace.description,
+        workspaceAvatar: currentWorkspace.avatar,
+        currentUser: profile
+          ? {
+              id: profile.id,
+              name: profile.fullName,
+              email: profile.email,
+              position: profile.position || 'Специалист',
+              role: 'owner',
+              avatar: profile.avatarUrl || '',
+            }
+          : prev.currentUser,
+      }));
+
+      // Asynchronously fetch cloud data
+      cloudDataService.loadWorkspaceData(currentWorkspace.id).then((data) => {
+        if (data) {
+          if (data.tasks.length > 0) setTasks(data.tasks);
+          if (data.projects.length > 0) setProjects(data.projects);
+          if (data.clients.length > 0) setClients(data.clients);
+          if (data.transactions.length > 0) setTransactions(data.transactions);
+          if (data.goals.length > 0) setGoals(data.goals);
+          if (data.priorities.length > 0) setPriorities(data.priorities);
+          if (data.plans.length > 0) setDevelopmentPlan(data.plans);
+          if (data.mission) setMission(data.mission);
+          if (data.vision) setVision(data.vision);
+          if (data.members.length > 0) setMembers(data.members);
+        }
+      });
+    }
+  }, [currentWorkspace?.id, profile]);
 
   // Modals & Panels
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -351,6 +394,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const saveTask = (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
     const saved = storageService.saveTask(taskData);
     setTasks(storageService.getTasks());
+    if (currentWorkspace?.id) {
+      cloudDataService.syncTask(currentWorkspace.id, saved);
+    }
     return saved;
   };
 
@@ -359,6 +405,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTasks(storageService.getTasks());
     if (selectedTaskId === taskId) {
       setSelectedTaskId(null);
+    }
+    if (currentWorkspace?.id) {
+      cloudDataService.deleteTask(currentWorkspace.id, taskId);
     }
   };
 
@@ -418,6 +467,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const saveProject = (projData: Omit<Project, 'id' | 'createdAt'> & { id?: string }) => {
     const saved = storageService.saveProject(projData);
     setProjects(storageService.getProjects());
+    if (currentWorkspace?.id) {
+      cloudDataService.syncProject(currentWorkspace.id, saved);
+    }
     return saved;
   };
 
@@ -426,6 +478,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setProjects(storageService.getProjects());
     if (selectedProjectId === projectId) {
       setSelectedProjectId(null);
+    }
+    if (currentWorkspace?.id) {
+      cloudDataService.deleteProject(currentWorkspace.id, projectId);
     }
   };
 
@@ -468,6 +523,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const saveClient = (clientData: Omit<Client, 'id' | 'createdAt'> & { id?: string }) => {
     const saved = storageService.saveClient(clientData);
     setClients(storageService.getClients());
+    if (currentWorkspace?.id) {
+      cloudDataService.syncClient(currentWorkspace.id, saved);
+    }
     return saved;
   };
 
@@ -476,6 +534,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setClients(storageService.getClients());
     if (selectedClientId === clientId) {
       setSelectedClientId(null);
+    }
+    if (currentWorkspace?.id) {
+      cloudDataService.deleteClient(currentWorkspace.id, clientId);
     }
   };
 
@@ -516,12 +577,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const saveTransaction = (txData: Omit<Transaction, 'id' | 'createdAt'> & { id?: string }) => {
     const saved = storageService.saveTransaction(txData);
     setTransactions(storageService.getTransactions());
+    if (currentWorkspace?.id) {
+      cloudDataService.syncTransaction(currentWorkspace.id, saved);
+    }
     return saved;
   };
 
   const deleteTransaction = (txId: string) => {
     storageService.deleteTransaction(txId);
     setTransactions(storageService.getTransactions());
+    if (currentWorkspace?.id) {
+      cloudDataService.deleteTransaction(currentWorkspace.id, txId);
+    }
   };
 
   const openCreateTransaction = (defaultType?: 'income' | 'expense') => {

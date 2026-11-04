@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { PageId } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../common/Avatar';
+import { WorkspaceSwitcher } from '../workspace/WorkspaceSwitcher';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -26,6 +28,7 @@ export const Sidebar: React.FC = () => {
     settings,
     members,
   } = useApp();
+  const { profile, signOut } = useAuth();
 
   const navItems: { id: PageId; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Главная', icon: LayoutDashboard },
@@ -125,45 +128,21 @@ export const Sidebar: React.FC = () => {
 
       {/* Workspace Switcher */}
       <div className="px-3 py-2.5 border-t border-slate-800/60">
-        {!sidebarCollapsed ? (
-          <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800/80 transition-colors cursor-pointer border border-slate-700/40">
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-bold text-xs flex items-center justify-center shrink-0">
-                {settings.workspaceAvatar || '⚡'}
-              </div>
-              <div className="truncate text-left">
-                <div className="text-xs font-semibold text-white truncate">
-                  {settings.workspaceName}
-                </div>
-                <div className="text-[10px] text-slate-400">
-                  9 разделов · {members.length} {members.length === 1 ? 'участник' : 'участников'}
-                </div>
-              </div>
-            </div>
-            <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          </div>
-        ) : (
-          <div
-            className="w-10 h-10 mx-auto rounded-xl bg-slate-800/60 hover:bg-slate-800 flex items-center justify-center text-sm cursor-pointer border border-slate-700/40"
-            title={settings.workspaceName}
-          >
-            {settings.workspaceAvatar || '⚡'}
-          </div>
-        )}
+        <WorkspaceSwitcher collapsed={sidebarCollapsed} />
       </div>
 
       {/* Current User Profile Footer */}
-      <div className="p-3 border-t border-slate-800/80">
+      <div className="p-3 border-t border-slate-800/80 flex items-center justify-between">
         <div
           onClick={() => setActivePage('settings')}
-          className={`flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800/60 transition-colors cursor-pointer ${
+          className={`flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-800/60 transition-colors cursor-pointer flex-1 min-w-0 ${
             sidebarCollapsed ? 'justify-center p-1' : ''
           }`}
           title="Профиль и настройки"
         >
           <Avatar
-            src={settings.currentUser.avatar}
-            name={settings.currentUser.name}
+            src={profile?.avatarUrl || settings.currentUser.avatar}
+            name={profile?.fullName || settings.currentUser.name}
             size={sidebarCollapsed ? 'sm' : 'md'}
             showOnlineStatus
             isOnline={true}
@@ -171,10 +150,10 @@ export const Sidebar: React.FC = () => {
           {!sidebarCollapsed && (
             <div className="truncate text-left flex-1 min-w-0">
               <div className="text-xs font-medium text-white truncate">
-                {settings.currentUser.name}
+                {profile?.fullName || settings.currentUser.name}
               </div>
               <div className="text-[11px] text-slate-400 truncate">
-                {settings.currentUser.position}
+                {profile?.position || settings.currentUser.position}
               </div>
             </div>
           )}
